@@ -2,7 +2,7 @@ import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
-import { CalendarDays, Clock, Trophy, Users, AlertCircle, ChevronRight, ImageIcon } from "lucide-react"
+import { CalendarDays, Trophy, ChevronRight, ImageIcon } from "lucide-react"
 import Link from "next/link"
 import FilterDate from "@/components/mentor/filter-date"
 
@@ -24,11 +24,11 @@ export default async function RiwayatPage({
   const selectedMonth = params.month ? parseInt(params.month) : now.getMonth() + 1
   const selectedYear = params.year ? parseInt(params.year) : now.getFullYear()
 
-  // Buat Range Tanggal (Start Date - End Date bulan tersebut)
-  const startDate = new Date(selectedYear, selectedMonth - 1, 1) // Tgl 1
-  const endDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59) // Tgl Terakhir Bulan itu
+  // Range Tanggal
+  const startDate = new Date(selectedYear, selectedMonth - 1, 1)
+  const endDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59)
 
-  // 1. AMBIL DATA PRESENSI (Filtered)
+  // 1. AMBIL DATA PRESENSI
   const rawAttendances = await prisma.attendance.findMany({
     where: { 
       recorderId: userId,
@@ -48,9 +48,9 @@ export default async function RiwayatPage({
     date: Date
     exculId: string
     exculName: string
-    campus: string
+    // HAPUS field 'campus' agar tidak ada potensi muncul di UI
     totalStudent: number
-    hasProof: boolean // Tambahan: Cek ada foto ga
+    hasProof: boolean 
     stats: { HADIR: number; SAKIT: number; IZIN: number; ALPHA: number }
   }
 
@@ -65,8 +65,8 @@ export default async function RiwayatPage({
       sessions[key] = {
         date: record.date,
         exculId: exculId,
-        exculName: record.student.excul.name,
-        campus: record.student.excul.location,
+        // Pastikan hanya ambil Nama, tanpa lokasi
+        exculName: record.student.excul.name, 
         totalStudent: 0,
         hasProof: false,
         stats: { HADIR: 0, SAKIT: 0, IZIN: 0, ALPHA: 0 }
@@ -74,7 +74,7 @@ export default async function RiwayatPage({
     }
 
     sessions[key].totalStudent += 1
-    if (record.proofImageUrl) sessions[key].hasProof = true // Jika ada 1 siswa punya bukti, sesi dianggap ada bukti
+    if (record.proofImageUrl) sessions[key].hasProof = true
     
     if (sessions[key].stats[record.status] !== undefined) {
        sessions[key].stats[record.status] += 1
@@ -118,6 +118,7 @@ export default async function RiwayatPage({
                             <ChevronRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-all" />
                           </h3>
                           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 mt-1">
+                            {/* HANYA MENAMPILKAN NAMA EKSKUL */}
                             <span className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-medium">
                               <Trophy className="w-3 h-3" /> {session.exculName}
                             </span>

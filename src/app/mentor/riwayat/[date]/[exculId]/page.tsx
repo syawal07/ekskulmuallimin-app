@@ -62,7 +62,8 @@ export default async function EditAttendancePage({
       <AttendanceForm 
         students={students} 
         exculId={exculId} 
-        exculName={`${excul.name} - Kampus ${excul.location}`}
+        // 👇 PERBAIKAN DI SINI: Hanya kirim nama ekskul saja (tanpa lokasi)
+        exculName={excul.name}
         initialDate={date}          // Mengunci tanggal
         initialData={existingAttendance} // Mengisi radio button otomatis
       />

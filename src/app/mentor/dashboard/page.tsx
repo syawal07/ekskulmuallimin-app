@@ -4,16 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Users, Trophy, CalendarCheck, ArrowRight, Clock } from "lucide-react"
 import Link from "next/link"
+import { redirect } from "next/navigation" // 👈 Tambahkan import redirect
+
+// Pastikan halaman ini selalu ambil data terbaru
+export const dynamic = "force-dynamic" 
 
 export default async function MentorDashboard() {
   // 1. Ambil ID Guru yang sedang login
   const cookieStore = await cookies()
   const userId = cookieStore.get("userId")?.value
 
-  if (!userId) return null
+  if (!userId) {
+    redirect("/login") // Jika tidak ada cookie, lempar ke login
+  }
 
   // 2. Ambil Data Real dari Database
-  // Kita cari guru ini pegang ekskul apa saja & hitung siswanya
   const mentorData = await prisma.user.findUnique({
     where: { id: userId },
     include: {
@@ -27,13 +32,22 @@ export default async function MentorDashboard() {
     }
   })
 
-  // 3. Hitung Statistik Sederhana
-  const exculs = mentorData?.mentoringExculs || []
+  // 3. CEK PENTING: Jika User sudah dihapus Admin tapi cookie masih ada
+  if (!mentorData) {
+    redirect("/login") // 👈 Paksa logout/redirect agar tidak error
+  }
+
+  // 4. Hitung Statistik Sederhana
+  // Gunakan optional chaining (?.) dan default array ([]) agar aman
+  const exculs = mentorData.mentoringExculs || [] 
   const totalEkskul = exculs.length
-  // Menjumlahkan semua siswa dari semua ekskul yang diampu
-  const totalSiswa = exculs.reduce((acc, curr) => acc + curr._count.students, 0)
   
-  // Cek apakah hari ini sudah ada presensi? (Opsional, logika sederhana dulu)
+  // Hitung total siswa (aman dari null)
+  const totalSiswa = exculs.reduce((acc, curr) => {
+    return acc + (curr._count?.students || 0)
+  }, 0)
+  
+  // Cek Presensi Hari Ini
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   
@@ -52,12 +66,12 @@ export default async function MentorDashboard() {
       <div>
         <h1 className="text-3xl font-bold text-slate-900">Dashboard Pengajar</h1>
         <p className="text-slate-600 mt-2">
-          Assalamu&apos;alaikum, <span className="font-bold text-primary">{mentorData?.name}</span>. 
+          Assalamu&apos;alaikum, <span className="font-bold text-primary">{mentorData.name}</span>. 
           Berikut ringkasan aktivitas ekstrakurikuler Anda.
         </p>
       </div>
 
-      {/* STATISTIK CARDS (Mengisi Ruang Putih) */}
+      {/* STATISTIK CARDS */}
       <div className="grid gap-6 md:grid-cols-3">
         
         {/* KARTU 1: TOTAL EKSKUL */}
@@ -80,7 +94,7 @@ export default async function MentorDashboard() {
         <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">
-              Total Siswa Binaaan
+              Total Siswa Binaan
             </CardTitle>
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
@@ -130,7 +144,7 @@ export default async function MentorDashboard() {
                       <div>
                         <p className="font-bold text-slate-900">{ex.name}</p>
                         <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">
-                          Kampus {ex.location} • {ex._count.students} Siswa
+                          Kampus {ex.location} • {ex._count?.students || 0} Siswa
                         </p>
                       </div>
                     </div>
@@ -148,7 +162,7 @@ export default async function MentorDashboard() {
           </CardContent>
         </Card>
 
-        {/* Kolom Kanan: Jadwal / Info (Placeholder Cerdas) */}
+        {/* Kolom Kanan: Jadwal / Info */}
         <Card className="shadow-sm bg-gradient-to-br from-slate-900 to-slate-800 text-white border-none">
           <CardHeader>
             <CardTitle className="text-lg text-white flex items-center gap-2">

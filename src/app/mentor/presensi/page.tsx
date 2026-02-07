@@ -2,7 +2,7 @@ import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import AttendanceForm from "@/components/mentor/attendance-form"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, Trophy } from "lucide-react"
@@ -33,8 +33,7 @@ export default async function PresensiPage({
     return <div className="p-8 text-center text-slate-500">Anda belum ditugaskan mengampu ekskul apapun.</div>
   }
 
-  // KASUS B: Guru punya 1 ekskul -> Langsung pilih otomatis
-  // KASUS C: Guru punya banyak ekskul -> Cek apakah user sudah milih di URL?
+  // KASUS B & C: Logika pemilihan ekskul
   let selectedExculId = params.exculId
 
   // Jika cuma 1, paksa pilih itu
@@ -42,7 +41,7 @@ export default async function PresensiPage({
     selectedExculId = exculs[0].id
   }
 
-  // JIKA BELUM MEMILIH EKSKUL (Untuk guru yang pegang > 1 ekskul)
+  // JIKA BELUM MEMILIH EKSKUL (Tampilkan Pilihan)
   if (!selectedExculId) {
     return (
       <div className="space-y-6">
@@ -59,9 +58,7 @@ export default async function PresensiPage({
                 </div>
                 <div>
                   <h3 className="font-bold text-lg text-slate-900">{ex.name}</h3>
-                  <span className="inline-block bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded mt-1">
-                    Kampus {ex.location}
-                  </span>
+                  {/* BAGIAN LOKASI DIHAPUS AGAR BERSIH */}
                 </div>
                 <Link href={`/mentor/presensi?exculId=${ex.id}`} className="w-full">
                   <Button className="w-full" variant="outline">Pilih Kelas <ArrowRight className="ml-2 w-4 h-4" /></Button>
@@ -100,7 +97,8 @@ export default async function PresensiPage({
       <AttendanceForm 
         students={students} 
         exculId={selectedExculId} 
-        exculName={`${selectedExcul?.name} - Kampus ${selectedExcul?.location}`}
+        // 👇 PERBAIKAN: Hanya kirim nama ekskul saja (tanpa lokasi)
+        exculName={selectedExcul?.name || ""}
       />
     </div>
   )
