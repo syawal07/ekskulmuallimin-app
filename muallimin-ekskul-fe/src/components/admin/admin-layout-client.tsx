@@ -169,6 +169,13 @@ export default function AdminLayoutClient({
             onClick={() => setIsMobileMenuOpen(false)}
           />
           <MenuItem 
+            href="/admin/berita"              
+            icon={ImageIcon} 
+            label="Berita Kegiatan" 
+            isActive={isPathActive("/admin/berita")} 
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <MenuItem 
             href="/admin/galeri"              
             icon={ImageIcon} 
             label="Galeri Kegiatan" 

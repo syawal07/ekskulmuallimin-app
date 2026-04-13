@@ -23,7 +23,7 @@ class AttendanceController extends Controller
 
         $today = Carbon::today();
         $attendanceToday = Attendance::where('recorder_id', $user->id)
-            ->whereDate('date', $today)
+            ->whereBetween('date', [$today->copy()->startOfDay(), $today->copy()->endOfDay()])
             ->count();
 
         $exculData = $exculs->map(function ($ex) {
@@ -69,7 +69,7 @@ class AttendanceController extends Controller
                 $attendances = Attendance::whereHas('student', function($q) use ($exculId) {
                         $q->where('excul_id', $exculId);
                     })
-                    ->whereDate('date', Carbon::today())
+                    ->whereBetween('date', [Carbon::today()->startOfDay(), Carbon::today()->endOfDay()])
                     ->get();
 
                 $existingAttendance = $attendances->map(function($att) {
@@ -129,7 +129,7 @@ class AttendanceController extends Controller
                     $notes = $request->input("notes-{$studentId}", '');
 
                     $existing = Attendance::where('student_id', $studentId)
-                        ->whereDate('date', $date->toDateString())
+                        ->whereBetween('date', [$date->copy()->startOfDay(), $date->copy()->endOfDay()])
                         ->first();
 
                     if ($existing) {
@@ -238,7 +238,7 @@ class AttendanceController extends Controller
         $attendances = Attendance::whereHas('student', function($q) use ($exculId) {
                 $q->where('excul_id', $exculId);
             })
-            ->whereDate('date', Carbon::parse($date)->toDateString())
+            ->whereBetween('date', [Carbon::parse($date)->startOfDay(), Carbon::parse($date)->endOfDay()])
             ->get();
 
         $existing = $attendances->map(function($att) {
@@ -270,9 +270,79 @@ class AttendanceController extends Controller
                 $q->where('excul_id', $exculId);
             })
             ->where('recorder_id', $userId)
-            ->whereDate('date', Carbon::parse($date)->toDateString())
+            ->whereBetween('date', [Carbon::parse($date)->startOfDay(), Carbon::parse($date)->endOfDay()])
             ->delete();
 
         return response()->json(['success' => true], 200);
+    }
+
+    public function getRecap(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date|after_or_equal:start_date',
+            'excul_id'   => 'required|exists:exculs,id'
+        ]);
+
+        $user = $request->user();
+        
+        $isMentoring = $user->mentoringExculs()->where('excul_id', $request->excul_id)->exists();
+        if (!$isMentoring) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke data ekstrakurikuler ini.'
+            ], 403);
+        }
+
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $exculId = $request->query('excul_id');
+
+        $students = Student::with(['attendances' => function($q) use ($startDate, $endDate) {
+                $q->whereBetween('date', [$startDate, $endDate]);
+            }])
+            ->where('excul_id', $exculId)
+            ->where('is_active', true)
+            ->orderBy('class')
+            ->orderBy('name')
+            ->get();
+
+        $recapData = [];
+
+        foreach ($students as $student) {
+            $attendances = $student->attendances;
+
+            $hadir = $attendances->where('status', 'HADIR')->count();
+            $izin = $attendances->where('status', 'IZIN')->count();
+            $sakit = $attendances->where('status', 'SAKIT')->count();
+            $alpha = $attendances->where('status', 'ALPHA')->count();
+
+            $history = $attendances->map(function($att) {
+                return [
+                    'date' => $att->date,
+                    'status' => $att->status,
+                    'notes' => $att->notes
+                ];
+            })->sortBy('date')->values();
+
+            $recapData[] = [
+                'student_id' => $student->id,
+                'student_name' => $student->name,
+                'student_class' => $student->class,
+                'summary' => [
+                    'hadir' => $hadir,
+                    'izin' => $izin,
+                    'sakit' => $sakit,
+                    'alpha' => $alpha,
+                    'total_meetings' => $hadir + $izin + $sakit + $alpha
+                ],
+                'history' => $history
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $recapData
+        ], 200);
     }
 }

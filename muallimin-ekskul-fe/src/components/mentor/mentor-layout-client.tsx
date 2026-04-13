@@ -139,6 +139,13 @@ export default function MentorLayoutClient({
             isActive={isPathActive("/mentor/riwayat")}
             onClick={() => setIsMobileMenuOpen(false)}
           />
+          <MenuItem 
+            href="/mentor/rekap" 
+            icon={History} 
+            label="Rekapan Kehadiran" 
+            isActive={isPathActive("/mentor/rekap")}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
         </div>
 
         <div className="p-4 border-t border-slate-50 bg-slate-50/50 m-4 rounded-2xl shrink-0">

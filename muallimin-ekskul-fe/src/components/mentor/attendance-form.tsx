@@ -7,10 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { submitAttendance, deleteAttendanceSession } from "@/actions/attendanceAction"
-import { Save, Loader2, Trash2, Camera, ChevronLeft, ChevronRight } from "lucide-react"
+import { Save, Loader2, Trash2, Camera, ChevronLeft, ChevronRight, Search } from "lucide-react"
 import Image from "next/image"
-import { toast } from "sonner" // 1. IMPORT TOAST
-// 2. IMPORT MODAL KEREN
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,17 +51,20 @@ export default function AttendanceForm({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  
-  // State untuk Modal Hapus
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
 
-  // LOGIKA PAGINATION
+  const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10 
   
-  const totalPages = Math.ceil(students.length / itemsPerPage)
+  const filteredStudents = students.filter(student => 
+    student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    student.class.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage))
   
-  const paginatedStudents = students.slice(
+  const paginatedStudents = filteredStudents.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   )
@@ -78,30 +80,24 @@ export default function AttendanceForm({
     setIsSubmitting(true)
     const formData = new FormData(e.currentTarget)
     
-    // Validasi file size
     const file = formData.get("proofImage") as File
     if (file && file.size > 2 * 1024 * 1024) {
-      toast.error("Ukuran foto terlalu besar! Maksimal 2MB.") // Ganti alert dengan Toast
+      toast.error("Ukuran foto terlalu besar! Maksimal 2MB.")
       setIsSubmitting(false)
       return
     }
 
     const result = await submitAttendance(formData)
     if (result?.error) {
-      toast.error(result.error) // Ganti alert dengan Toast
+      toast.error(result.error)
       setIsSubmitting(false)
     }
-    // Jika sukses, server action akan redirect
   }
 
-  // HANDLER HAPUS (Tanpa window.confirm)
   const handleDelete = async () => {
     setIsDeleting(true)
-    
-    // Panggil Server Action
     const res = await deleteAttendanceSession(defaultDate, exculId)
     
-    // Jika ada error (biasanya kalau sukses dia langsung redirect)
     if (res?.error) {
       toast.error(res.error)
       setIsDeleting(false)
@@ -125,7 +121,6 @@ export default function AttendanceForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <input type="hidden" name="exculId" value={exculId} />
       
-      {/* INVISIBLE INPUT (Untuk menjaga data halaman lain tetap tersubmit) */}
       <div className="hidden">
         {students.map(s => {
            if (paginatedStudents.find(p => p.id === s.id)) return null
@@ -138,7 +133,6 @@ export default function AttendanceForm({
         })}
       </div>
       
-      {/* SECTION 1: INFO KEGIATAN */}
       <Card className="border-t-4 border-t-primary shadow-sm bg-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-slate-800">
@@ -165,7 +159,6 @@ export default function AttendanceForm({
               </div>
             </div>
 
-            {/* UPLOAD FOTO AREA */}
             <div>
               <Label className="text-slate-600 mb-2 block">Bukti Foto Kegiatan (Opsional)</Label>
               <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
@@ -193,82 +186,100 @@ export default function AttendanceForm({
         </CardContent>
       </Card>
 
-      {/* SECTION 2: DAFTAR SISWA */}
       <Card className="shadow-sm border-slate-200 bg-white">
-        <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
-          <CardTitle className="text-slate-800">
-            Daftar Siswa ({students.length})
-          </CardTitle>
-          <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-            Halaman {currentPage} dari {totalPages}
-          </span>
+        <CardHeader className="border-b border-slate-100 pb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <CardTitle className="text-slate-800 whitespace-nowrap">
+              Daftar Siswa ({filteredStudents.length})
+            </CardTitle>
+            
+            <div className="flex items-center w-full sm:w-auto gap-3">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="Cari nama atau kelas..." 
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="pl-9 h-9 text-sm"
+                />
+              </div>
+              <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full whitespace-nowrap">
+                Hal {currentPage}/{totalPages}
+              </span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
-            {paginatedStudents.map((student, index) => (
-              <div key={student.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-primary/20 hover:shadow-md transition-all duration-200">
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-                  
-                  {/* Info Siswa */}
-                  <div className="flex items-center gap-4 w-full xl:w-[30%]">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-sm">
-                      {(currentPage - 1) * itemsPerPage + index + 1}
+            {paginatedStudents.length === 0 ? (
+              <div className="text-center py-10 text-slate-500">
+                Data siswa tidak ditemukan.
+              </div>
+            ) : (
+              paginatedStudents.map((student, index) => (
+                <div key={student.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-primary/20 hover:shadow-md transition-all duration-200">
+                  <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                    
+                    <div className="flex items-center gap-4 w-full xl:w-[30%]">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-sm shrink-0">
+                        {(currentPage - 1) * itemsPerPage + index + 1}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 text-base line-clamp-1">{student.name}</p>
+                        <p className="text-sm text-slate-500 font-medium">{student.class} {student.nis ? `• ${student.nis}` : ''}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-900 text-base">{student.name}</p>
-                      <p className="text-sm text-slate-500 font-medium">{student.class} {student.nis ? `• ${student.nis}` : ''}</p>
+
+                    <div className="flex-1 overflow-x-auto pb-2 xl:pb-0">
+                      <RadioGroup 
+                        defaultValue={getInitialStatus(student.id)} 
+                        name={`status-${student.id}`} 
+                        className="flex flex-row items-center gap-2 min-w-max"
+                      >
+                        <div className="relative">
+                          <RadioGroupItem value="HADIR" id={`h-${student.id}`} className="peer sr-only" />
+                          <Label htmlFor={`h-${student.id}`} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-green-50 peer-data-[state=checked]:bg-green-100 peer-data-[state=checked]:border-green-500 peer-data-[state=checked]:text-green-700 transition-all font-semibold text-sm text-slate-600">
+                            <span className="w-2 h-2 rounded-full bg-green-500" /> Hadir
+                          </Label>
+                        </div>
+                        <div className="relative">
+                          <RadioGroupItem value="IZIN" id={`i-${student.id}`} className="peer sr-only" />
+                          <Label htmlFor={`i-${student.id}`} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-yellow-50 peer-data-[state=checked]:bg-yellow-100 peer-data-[state=checked]:border-yellow-500 peer-data-[state=checked]:text-yellow-700 transition-all font-semibold text-sm text-slate-600">
+                            <span className="w-2 h-2 rounded-full bg-yellow-500" /> Izin
+                          </Label>
+                        </div>
+                        <div className="relative">
+                          <RadioGroupItem value="SAKIT" id={`s-${student.id}`} className="peer sr-only" />
+                          <Label htmlFor={`s-${student.id}`} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-blue-50 peer-data-[state=checked]:bg-blue-100 peer-data-[state=checked]:border-blue-500 peer-data-[state=checked]:text-blue-700 transition-all font-semibold text-sm text-slate-600">
+                            <span className="w-2 h-2 rounded-full bg-blue-500" /> Sakit
+                          </Label>
+                        </div>
+                        <div className="relative">
+                          <RadioGroupItem value="ALPHA" id={`a-${student.id}`} className="peer sr-only" />
+                          <Label htmlFor={`a-${student.id}`} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-red-50 peer-data-[state=checked]:bg-red-100 peer-data-[state=checked]:border-red-500 peer-data-[state=checked]:text-red-700 transition-all font-semibold text-sm text-slate-600">
+                            <span className="w-2 h-2 rounded-full bg-red-500" /> Alpha
+                          </Label>
+                        </div>
+                      </RadioGroup>
                     </div>
-                  </div>
 
-                  {/* Radio Button */}
-                  <div className="flex-1 overflow-x-auto pb-2 xl:pb-0">
-                    <RadioGroup 
-                      defaultValue={getInitialStatus(student.id)} 
-                      name={`status-${student.id}`} 
-                      className="flex flex-row items-center gap-2 min-w-max"
-                    >
-                      <div className="relative">
-                        <RadioGroupItem value="HADIR" id={`h-${student.id}`} className="peer sr-only" />
-                        <Label htmlFor={`h-${student.id}`} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-green-50 peer-data-[state=checked]:bg-green-100 peer-data-[state=checked]:border-green-500 peer-data-[state=checked]:text-green-700 transition-all font-semibold text-sm text-slate-600">
-                          <span className="w-2 h-2 rounded-full bg-green-500" /> Hadir
-                        </Label>
-                      </div>
-                      <div className="relative">
-                        <RadioGroupItem value="IZIN" id={`i-${student.id}`} className="peer sr-only" />
-                        <Label htmlFor={`i-${student.id}`} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-yellow-50 peer-data-[state=checked]:bg-yellow-100 peer-data-[state=checked]:border-yellow-500 peer-data-[state=checked]:text-yellow-700 transition-all font-semibold text-sm text-slate-600">
-                          <span className="w-2 h-2 rounded-full bg-yellow-500" /> Izin
-                        </Label>
-                      </div>
-                      <div className="relative">
-                        <RadioGroupItem value="SAKIT" id={`s-${student.id}`} className="peer sr-only" />
-                        <Label htmlFor={`s-${student.id}`} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-blue-50 peer-data-[state=checked]:bg-blue-100 peer-data-[state=checked]:border-blue-500 peer-data-[state=checked]:text-blue-700 transition-all font-semibold text-sm text-slate-600">
-                          <span className="w-2 h-2 rounded-full bg-blue-500" /> Sakit
-                        </Label>
-                      </div>
-                      <div className="relative">
-                        <RadioGroupItem value="ALPHA" id={`a-${student.id}`} className="peer sr-only" />
-                        <Label htmlFor={`a-${student.id}`} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-red-50 peer-data-[state=checked]:bg-red-100 peer-data-[state=checked]:border-red-500 peer-data-[state=checked]:text-red-700 transition-all font-semibold text-sm text-slate-600">
-                          <span className="w-2 h-2 rounded-full bg-red-500" /> Alpha
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  {/* Catatan */}
-                  <div className="w-full xl:w-[25%] mt-2 xl:mt-0">
-                    <Input 
-                      name={`notes-${student.id}`} 
-                      defaultValue={getInitialNotes(student.id)}
-                      placeholder="Catatan..." 
-                      className="bg-white border-slate-200 focus-visible:ring-primary h-10"
-                    />
+                    <div className="w-full xl:w-[25%] mt-2 xl:mt-0">
+                      <Input 
+                        name={`notes-${student.id}`} 
+                        defaultValue={getInitialNotes(student.id)}
+                        placeholder="Catatan..." 
+                        className="bg-white border-slate-200 focus-visible:ring-primary h-10"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
-          {/* Pagination Controls */}
           {totalPages > 1 && (
             <div className="flex justify-between items-center mt-8 pt-4 border-t border-slate-100">
               <Button
@@ -279,7 +290,9 @@ export default function AttendanceForm({
               >
                 <ChevronLeft className="w-4 h-4 mr-2" /> Sebelumnya
               </Button>
-              <span className="text-sm font-medium text-slate-600">Halaman {currentPage} / {totalPages}</span>
+              <span className="text-sm font-medium text-slate-600 hidden sm:inline-block">
+                Halaman {currentPage} dari {totalPages}
+              </span>
               <Button
                 type="button"
                 variant="outline" 
@@ -293,10 +306,8 @@ export default function AttendanceForm({
         </CardContent>
       </Card>
 
-      {/* FOOTER ACTIONS */}
       <div className="sticky bottom-6 z-10 flex flex-col-reverse md:flex-row justify-end gap-3">
         {initialDate && (
-          // MODAL HAPUS SESI (ALERT DIALOG)
           <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
             <AlertDialogTrigger asChild>
               <Button 
@@ -322,7 +333,7 @@ export default function AttendanceForm({
                 <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
                 <AlertDialogAction 
                   onClick={(e) => {
-                    e.preventDefault() // Biar loading tampil dulu
+                    e.preventDefault()
                     handleDelete()
                   }}
                   disabled={isDeleting}

@@ -10,6 +10,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\MentorController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AdminAttendanceController;
+use App\Http\Controllers\NewsController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\AdminAssessmentController;
@@ -17,6 +18,8 @@ use App\Http\Controllers\AssessmentController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/landing', [LandingController::class, 'index']);
+Route::get('/public/news', [NewsController::class, 'publicIndex']);
+Route::get('/public/news/{slug}', [NewsController::class, 'publicShow']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -45,10 +48,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/admin/mentors/{id}', [MentorController::class, 'destroy']);
 
     Route::get('/admin/attendances', [AdminAttendanceController::class, 'index']);
+    Route::get('/admin/attendances/recap', [AdminAttendanceController::class, 'getMonthlyRecap']);
+    Route::get('/admin/attendances/sessions', [AdminAttendanceController::class, 'getSessions']);
     Route::get('/admin/attendances/export', [AdminAttendanceController::class, 'export']);
 
     Route::get('/admin/assessments', [AdminAssessmentController::class, 'index']);
     Route::get('/admin/assessments/export', [AdminAssessmentController::class, 'export']);
+
+    Route::get('/admin/news', [NewsController::class, 'index']);
+    Route::post('/admin/news', [NewsController::class, 'store']);
+    Route::get('/admin/news/{id}', [NewsController::class, 'show']);
+    Route::post('/admin/news/{id}', [NewsController::class, 'update']);
+    Route::delete('/admin/news/{id}', [NewsController::class, 'destroy']);
 
     Route::get('/admin/galleries', [GalleryController::class, 'index']);
     Route::post('/admin/galleries', [GalleryController::class, 'store']);
@@ -66,6 +77,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mentor/dashboard', [AttendanceController::class, 'getDashboard']);
     Route::get('/mentor/presensi-setup', [AttendanceController::class, 'getPresensiSetup']);
     Route::post('/mentor/attendance', [AttendanceController::class, 'store']);
+    Route::get('/mentor/attendances/recap', [AttendanceController::class, 'getRecap']);
     Route::delete('/mentor/attendance', [AttendanceController::class, 'destroySession']);
     Route::get('/mentor/history', [AttendanceController::class, 'getHistory']);
     Route::get('/mentor/presensi-edit', [AttendanceController::class, 'getPresensiEdit']);

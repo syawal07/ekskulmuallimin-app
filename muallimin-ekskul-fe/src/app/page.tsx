@@ -34,6 +34,30 @@ interface LandingData {
   galleries: GalleryItem[];
 }
 
+interface NewsItem {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  image: string | null;
+  created_at: string;
+}
+
+async function getPublicNews(): Promise<NewsItem[]> {
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+    if (!apiUrl) return [];
+    
+    const res = await fetch(`${apiUrl}/public/news`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    
+    const result = await res.json();
+    return result.data || [];
+  } catch (err) {
+    return [];
+  }
+}
+
 async function getLandingData(): Promise<LandingData | null> {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
@@ -57,6 +81,7 @@ async function getLandingData(): Promise<LandingData | null> {
 
 export default async function LandingPage() {
   const data = await getLandingData();
+  const news = await getPublicNews();
 
   const exculCount = data?.exculCount ?? 0;
   const studentEnrollmentCount = data?.studentEnrollmentCount ?? 0;
@@ -274,6 +299,55 @@ export default async function LandingPage() {
     </div>
   </div>
 </section>
+<section id="news" className="w-full py-24 bg-white border-t border-slate-100">
+          <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-24">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
+              <div>
+                <span className="text-emerald-600 font-bold tracking-widest text-sm uppercase">Informasi</span>
+                <h2 className="text-4xl font-extrabold text-slate-900 mt-2">Berita & Update</h2>
+              </div>
+            </div>
+            
+            {news.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {news.map((item) => (
+                  <Link href={`/berita/${item.slug}`} key={item.id} className="group flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden">
+                    <div className="relative aspect-[4/3] w-full bg-slate-50 overflow-hidden">
+                      {item.image ? (
+                        <Image 
+                          src={`${process.env.NEXT_PUBLIC_API_BACKEND_URL?.replace('/api', '')}${item.image}`} 
+                          alt={item.title} 
+                          fill 
+                          unoptimized
+                          className="object-cover transition-transform duration-700 group-hover:scale-110" 
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                          <Globe className="w-12 h-12 text-slate-300" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-6 md:p-8 flex flex-col flex-1">
+                      <span className="text-xs font-bold text-slate-400 mb-3 block uppercase tracking-wider">
+                        {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </span>
+                      <h3 className="text-xl font-bold text-slate-900 mb-4 line-clamp-2 group-hover:text-emerald-600 transition-colors leading-snug">
+                        {item.title}
+                      </h3>
+                      <div className="mt-auto flex items-center text-emerald-600 font-semibold text-sm">
+                        Baca selengkapnya <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50">
+                <p className="text-slate-500 font-medium">Belum ada berita yang dipublikasikan.</p>
+              </div>
+            )}
+          </div>
+        </section>
 
     <section id="gallery" className="w-full py-24 bg-slate-50">
   <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-24">
