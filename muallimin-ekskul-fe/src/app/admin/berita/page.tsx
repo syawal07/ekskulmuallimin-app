@@ -1,4 +1,4 @@
-import { fetchAdminNews } from "../../../actions/newsAction"
+import { fetchAdminNews } from "@/actions/newsAction"
 import AdminNewsClient from "@/components/admin/admin-news-client"
 
 export const dynamic = "force-dynamic"
