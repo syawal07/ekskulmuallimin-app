@@ -183,3 +183,52 @@ export async function updateStudent(
 
   redirect("/admin/siswa?success=updated")
 }
+export async function createStudentByMentor(prevState: StudentState, formData: FormData) {
+  const cookieStore = await cookies()
+  const userRole = cookieStore.get("user_role")?.value
+  const token = cookieStore.get("session_token")?.value
+  
+  if (!token) {
+    return { error: "Sesi tidak valid, silakan login ulang." }
+  }
+
+  const name = formData.get("name") as string
+  const kelas = formData.get("class") as string
+  const nis = formData.get("nis") as string
+  const exculId = formData.get("exculId") as string
+
+  if (!name || !kelas || !exculId) {
+    return { error: "Nama, Kelas, dan Ekskul wajib diisi." }
+  }
+
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+    const res = await fetch(`${apiUrl}/mentor/students`, {
+      method: "POST",
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        name: name,
+        class: kelas,
+        nis: nis || null,
+        excul_id: exculId
+      })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      return { error: result.message || "Gagal menyimpan data siswa." }
+    }
+
+    revalidatePath("/mentor/dashboard")
+    revalidatePath("/mentor/presensi-setup")
+    
+    return { success: true }
+  } catch (error) {
+    return { error: "Server Backend bermasalah." }
+  }
+}

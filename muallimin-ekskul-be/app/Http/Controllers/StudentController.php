@@ -172,4 +172,26 @@ class StudentController extends Controller
             ]
         ], 201);
     }
+
+    public function storeByMentor(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'class' => 'required|string|max:50',
+            'excul_id' => 'required|exists:exculs,id'
+        ]);
+
+        $student = Student::create([
+            'name' => $request->name,
+            'class' => $request->class,
+            'nis' => $request->nis,
+            'excul_id' => $request->excul_id,
+            'is_active' => true
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $student
+        ], 201);
+    }
 }
