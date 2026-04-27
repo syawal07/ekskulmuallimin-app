@@ -12,7 +12,6 @@ import { toast } from "sonner"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 
 
-// Definisikan tipe manual karena Prisma sudah dilepas
 export interface CompanyProfile {
   school_name?: string;
   logo_url?: string;
@@ -44,7 +43,14 @@ function SaveButton({ loading }: { loading: boolean }) {
 export default function SchoolProfileForm({ initialData }: { initialData: CompanyProfile }) {
   const [loading, setLoading] = useState(false)
 
-  const backendUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL?.replace('/api', '') || '';
+  const getImageUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL || process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BACKEND_URL || '';
+    const cleanBase = storageUrl.endsWith('/') ? storageUrl.slice(0, -1) : storageUrl;
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${cleanBase}${cleanPath}`;
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -83,7 +89,6 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
          </TabsList>
       </div>
 
-      {/* --- TAB 1: IDENTITAS --- */}
       <TabsContent value="branding">
         <form onSubmit={handleSave}>
           <Card>
@@ -100,8 +105,7 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
                 <Label>Logo Sekolah</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center bg-slate-50 hover:bg-slate-100 transition">
                   {initialData.logo_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={`${backendUrl}${initialData.logo_url}`} alt="Logo" className="h-16 mx-auto mb-2 object-contain" />
+                    <img src={getImageUrl(initialData.logo_url)} alt="Logo" className="h-16 mx-auto mb-2 object-contain" />
                   )}
                   <input 
                     type="file" 
@@ -119,7 +123,6 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
         </form>
       </TabsContent>
 
-      {/* --- TAB 2: LANDING PAGE --- */}
       <TabsContent value="landing">
         <form onSubmit={handleSave}>
           <Card>
@@ -146,8 +149,7 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
                   <Label>Foto Banner (Background)</Label>
                   <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center bg-slate-50">
                     {initialData.hero_image_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={`${backendUrl}${initialData.hero_image_url}`} alt="Hero" className="h-32 mx-auto mb-2 object-cover rounded-md" />
+                      <img src={getImageUrl(initialData.hero_image_url)} alt="Hero" className="h-32 mx-auto mb-2 object-cover rounded-md" />
                     )}
                     <input 
                       type="file" 
@@ -169,7 +171,6 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
         </form>
       </TabsContent>
 
-      {/* --- TAB 3: LOGIN PAGE --- */}
       <TabsContent value="login">
         <form onSubmit={handleSave}>
           <Card>
@@ -182,8 +183,7 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
                 <Label>Gambar Background</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center bg-slate-50">
                   {initialData.login_image_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={`${backendUrl}${initialData.login_image_url}`} alt="Login Bg" className="h-40 w-full mx-auto mb-2 object-cover rounded-md opacity-80" />
+                    <img src={getImageUrl(initialData.login_image_url)} alt="Login Bg" className="h-40 w-full mx-auto mb-2 object-cover rounded-md opacity-80" />
                   )}
                   <input 
                     type="file" 
@@ -209,7 +209,6 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
         </form>
       </TabsContent>
 
-      {/* --- TAB 4: KONTAK --- */}
       <TabsContent value="contact">
         <form onSubmit={handleSave}>
           <Card>

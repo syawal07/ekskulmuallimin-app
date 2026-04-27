@@ -9,7 +9,6 @@ export async function updateCompanyProfile(formData: FormData) {
 
   if (!token) return { error: "Sesi habis, silakan login ulang." }
 
-  // 1. Bersihkan file kosong agar tidak memicu error validasi di Laravel
   const filesToCheck = ["logo", "heroImage", "loginImage"];
   filesToCheck.forEach(field => {
       const file = formData.get(field) as File | null;
@@ -18,13 +17,11 @@ export async function updateCompanyProfile(formData: FormData) {
       }
   });
 
-  // 2. TRIK LARAVEL: Gunakan metode POST tapi beri tahu Laravel ini adalah PUT (Update)
   formData.append("_method", "PUT");
 
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BACKEND_URL;
     
-    // Kita tembak menggunakan method POST
     const res = await fetch(`${apiUrl}/admin/company-profile`, {
       method: "POST", 
       headers: {
@@ -40,7 +37,6 @@ export async function updateCompanyProfile(formData: FormData) {
       return { error: result.message || "Gagal menyimpan perubahan profil." }
     }
 
-    // Refresh halaman agar data baru langsung tampil
     revalidatePath("/admin/sekolah")
     revalidatePath("/") 
     revalidatePath("/login")
