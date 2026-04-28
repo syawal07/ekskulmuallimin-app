@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @theme {
+  /* PENTING: Menyambungkan variable Next.js ke Tailwind v4 */
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
   /* =========================================================
      WARNA RESMI MU'ALLIMIN 
      ========================================================= */
@@ -82,7 +85,7 @@
     @apply border-border;
   }
   body {
-    /* Menghapus 'font-sans' di sini karena font sudah disuntikkan via layout.tsx */
+    /* Cukup panggil background dan foreground, font-sans diurus di layout.tsx */
     @apply bg-background text-foreground;
   }
 }
