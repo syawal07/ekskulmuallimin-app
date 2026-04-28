@@ -3,11 +3,11 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner"; 
 
-// Memuat font Plus Jakarta Sans secara efisien
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-jakarta",
-  weight: ["400", "500", "600", "700", "800"],
+  // Menggunakan ketebalan yang lengkap agar desain dinamis
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -23,11 +23,10 @@ export default function RootLayout({
   return (
     <html lang="id" className="scroll-smooth">
       <body
-        className={`${plusJakartaSans.variable} font-sans antialiased`}
+        /* MENGGUNAKAN .className AGAR FONT LANGSUNG TER-APPLY PERSIS SEPERTI WEB MUALLIMIN */
+        className={`${plusJakartaSans.className} text-foreground antialiased bg-[#F8FAFC]`}
       >
         {children}
-        
-        {/* Notifikasi Toaster di tengah atas untuk semua halaman */}
         <Toaster position="top-center" richColors />
       </body>
     </html>

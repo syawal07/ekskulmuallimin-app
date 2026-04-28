@@ -3,11 +3,8 @@
 @tailwind utilities;
 
 @theme {
-  /* Font Plus Jakarta Sans sebagai standar */
-  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
-
   /* =========================================================
-     OVERRIDE WARNA TAILWIND DENGAN WARNA RESMI MU'ALLIMIN 
+     WARNA RESMI MU'ALLIMIN 
      ========================================================= */
   
   /* PALET BIRU (Muhammadiyah Royal Blue) */
@@ -85,6 +82,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    /* Menghapus 'font-sans' di sini karena font sudah disuntikkan via layout.tsx */
+    @apply bg-background text-foreground;
   }
 }
