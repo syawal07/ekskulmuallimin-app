@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google"; 
+import { Plus_Jakarta_Sans } from "next/font/google"; // Ganti ke Google Fonts
 import "./globals.css";
-// 1. IMPORT TOASTER (Wajib ada biar notifikasi muncul)
 import { Toaster } from "@/components/ui/sonner"; 
 
-// 2. Konfigurasi Font Poppins
-const poppins = Poppins({
-  variable: "--font-poppins",
+// Konfigurasi font otomatis (tidak perlu file manual)
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-jakarta",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -22,16 +21,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html lang="id" className="scroll-smooth">
       <body
-        // Gabungkan variable font dengan class font-sans
-        className={`${poppins.variable} font-sans antialiased`}
+        className={`${plusJakartaSans.variable} font-sans antialiased bg-[#F8FAFC]`}
       >
         {children}
-        
-        {/* 3. PASANG KOMPONEN TOASTER DISINI */}
-        {/* position="top-center" agar muncul di tengah atas (paling terlihat) */}
-        {/* richColors agar warna hijau/merah-nya menyala */}
         <Toaster position="top-center" richColors />
       </body>
     </html>
