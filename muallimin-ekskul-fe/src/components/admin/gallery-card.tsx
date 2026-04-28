@@ -14,6 +14,20 @@ type GalleryProps = {
   date: Date
 }
 
+const getImageUrl = (path?: string | null) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  
+  let baseUrl = process.env.NEXT_PUBLIC_STORAGE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BACKEND_URL || '';
+  
+  baseUrl = baseUrl.replace(/\/api$/, '');
+  baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  
+  return `${baseUrl}${cleanPath}`;
+}
+
 export default function GalleryCard({ item }: { item: GalleryProps }) {
   const [deleting, setDeleting] = useState(false)
 
@@ -35,7 +49,7 @@ export default function GalleryCard({ item }: { item: GalleryProps }) {
     <div className="group relative rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white hover:shadow-md transition-all">
       <div className="aspect-video relative bg-slate-100">
         <Image 
-          src={item.imageUrl} 
+          src={getImageUrl(item.imageUrl)} 
           alt={item.title} 
           fill 
           className="object-cover transition-transform duration-500 group-hover:scale-105"

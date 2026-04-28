@@ -24,25 +24,29 @@ export default function GalleryUploadForm() {
     event.preventDefault()
     setLoading(true)
 
-    const form = event.currentTarget
-    const formData = new FormData(form)
+    try {
+      const form = event.currentTarget
+      const formData = new FormData(form)
 
-    const res = await uploadGalleryImage(formData)
+      const res = await uploadGalleryImage(formData)
 
-    if (res?.error) {
-      toast.error(res.error)
-    } else {
-      toast.success("Foto berhasil ditambahkan ke galeri!")
-      form.reset() 
+      if (res?.error) {
+        toast.error(res.error)
+      } else {
+        toast.success("Foto berhasil ditambahkan ke galeri!")
+        form.reset() 
+      }
+    } catch (err) {
+      toast.error("Terjadi kesalahan saat mengunggah foto.")
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (
-    <Card className="mb-8 border-dashed border-2 border-emerald-100 bg-emerald-50/30">
+    <Card className="mb-8 border-dashed border-2 border-blue-100 bg-blue-50/30">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-emerald-800 text-lg">
+        <CardTitle className="flex items-center gap-2 text-blue-800 text-lg">
           <Plus className="w-5 h-5" /> Tambah Foto Baru
         </CardTitle>
       </CardHeader>
@@ -67,8 +71,8 @@ export default function GalleryUploadForm() {
             <p className="text-[10px] text-slate-500 mt-1">Max 5MB</p>
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4 mr-2" />}
+          <Button type="submit" disabled={loading} className="w-full md:w-auto bg-blue-600 hover:bg-blue-700">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ImageIcon className="w-4 h-4 mr-2" />}
             Upload
           </Button>
           

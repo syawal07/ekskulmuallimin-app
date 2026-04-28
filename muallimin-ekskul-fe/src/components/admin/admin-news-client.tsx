@@ -32,6 +32,20 @@ interface NewsData {
   created_at: string;
 }
 
+const getImageUrl = (path?: string | null) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  
+  let baseUrl = process.env.NEXT_PUBLIC_STORAGE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BACKEND_URL || '';
+  
+  baseUrl = baseUrl.replace(/\/api$/, '');
+  baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  
+  return `${baseUrl}${cleanPath}`;
+}
+
 export default function AdminNewsClient({ initialData }: { initialData: NewsData[] }) {
   const [newsList, setNewsList] = useState<NewsData[]>(initialData)
   const [searchQuery, setSearchQuery] = useState("")
@@ -65,7 +79,7 @@ export default function AdminNewsClient({ initialData }: { initialData: NewsData
   const openEditModal = (news: NewsData) => {
     setSelectedNews(news)
     setFormData({ title: news.title, content: news.content, status: news.status })
-    setPreviewImage(news.image ? `${process.env.NEXT_PUBLIC_API_BACKEND_URL?.replace('/api', '')}${news.image}` : null)
+    setPreviewImage(news.image ? getImageUrl(news.image) : null)
     setIsModalOpen(true)
   }
 
@@ -167,7 +181,7 @@ export default function AdminNewsClient({ initialData }: { initialData: NewsData
                       <TableCell className="text-center">
                         {news.image ? (
                           <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 mx-auto relative border">
-                            <Image src={`${process.env.NEXT_PUBLIC_API_BACKEND_URL?.replace('/api', '')}${news.image}`} alt={news.title} fill className="object-cover" />
+                            <Image src={getImageUrl(news.image)} alt={news.title} fill className="object-cover" />
                           </div>
                         ) : (
                           <div className="w-12 h-12 rounded-lg bg-slate-100 mx-auto flex items-center justify-center border border-dashed border-slate-300">

@@ -79,14 +79,18 @@ async function getLandingData(): Promise<LandingData | null> {
   }
 }
 
-// FUNGSI HELPER BARU UNTUK GAMBAR
 const getImageUrl = (path?: string | null) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
-  const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL || process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BACKEND_URL || '';
-  const cleanBase = storageUrl.endsWith('/') ? storageUrl.slice(0, -1) : storageUrl;
+  
+  let baseUrl = process.env.NEXT_PUBLIC_STORAGE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BACKEND_URL || '';
+  
+  baseUrl = baseUrl.replace(/\/api$/, '');
+  baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${cleanBase}${cleanPath}`;
+  
+  return `${baseUrl}${cleanPath}`;
 }
 
 export default async function LandingPage() {
@@ -108,7 +112,6 @@ export default async function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#FAFAFA] font-sans selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden">
       
-      {/* HEADER DIUBAH KE TEMA BIRU/KUNING */}
       <header className="fixed top-0 z-50 w-full border-b border-white/20 bg-white/80 backdrop-blur-xl transition-all duration-300">
         <div className="container max-w-7xl mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4 group cursor-pointer">
@@ -146,7 +149,6 @@ export default async function LandingPage() {
 
       <main className="flex-1">
         
-        {/* HERO SECTION BIRU */}
         <section className="relative w-full min-h-screen flex items-center pt-20 pb-32 md:pt-32 md:pb-48 overflow-hidden bg-gradient-to-b from-blue-50/50 to-white">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-200/30 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 mix-blend-multiply" />
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-amber-100/40 rounded-full blur-[80px] translate-y-1/3 -translate-x-1/3 mix-blend-multiply" />

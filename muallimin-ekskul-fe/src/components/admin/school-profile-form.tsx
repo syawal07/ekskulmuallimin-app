@@ -43,13 +43,18 @@ function SaveButton({ loading }: { loading: boolean }) {
 export default function SchoolProfileForm({ initialData }: { initialData: CompanyProfile }) {
   const [loading, setLoading] = useState(false)
 
-  const getImageUrl = (path?: string) => {
+  const getImageUrl = (path?: string | null) => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
-    const storageUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NEXT_PUBLIC_API_BACKEND_URL || '').replace(/\/api$/, '');
-    const cleanBase = storageUrl.endsWith('/') ? storageUrl.slice(0, -1) : storageUrl;
+    
+    let baseUrl = process.env.NEXT_PUBLIC_STORAGE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BACKEND_URL || '';
+    
+    baseUrl = baseUrl.replace(/\/api$/, '');
+    baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
-    return `${cleanBase}${cleanPath}`;
+    
+    return `${baseUrl}${cleanPath}`;
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
