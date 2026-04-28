@@ -3,23 +3,23 @@
 @tailwind utilities;
 
 @theme {
-  /* Font Plus Jakarta Sans */
+  /* Font Plus Jakarta Sans sebagai standar */
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 
   /* =========================================================
      OVERRIDE WARNA TAILWIND DENGAN WARNA RESMI MU'ALLIMIN 
      ========================================================= */
   
-  /* PALET BIRU (Primary Blue) */
-  --color-blue-600: #2F66C5; /* Alternatif Terang */
-  --color-blue-700: #1E4FA3; /* Primary Blue (Bg Hero, Header) */
-  --color-blue-800: #153b7d; /* Gelap (Hover, Gradient) */
-  --color-blue-900: #0f2b5c; /* Paling Gelap (Footer) */
+  /* PALET BIRU (Muhammadiyah Royal Blue) */
+  --color-blue-600: #1E4FA3; 
+  --color-blue-700: #0D47A1; /* Primary Blue (Bg Hero, Header) */
+  --color-blue-800: #0A377D; 
+  --color-blue-900: #072657; /* Paling Gelap (Footer) */
   
-  /* PALET KUNING/ORANYE (Primary Yellow) */
-  --color-amber-400: #FFD84D; /* Alternatif Terang */
-  --color-amber-500: #F4C430; /* Primary Yellow (Tombol, Badge) */
-  --color-amber-600: #D4A017; /* Alternatif Gelap (Hover Tombol, Shadow) */
+  /* PALET KUNING (Muhammadiyah Gold/Sun) */
+  --color-amber-400: #FFDF33; 
+  --color-amber-500: #FFD500; /* Primary Yellow (Tombol Utama) */
+  --color-amber-600: #E6C000; 
 }
 
 @layer base {
@@ -33,18 +33,18 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* HSL KONVERSI DARI #1E4FA3 UNTUK KOMPONEN SHADCN UI */
-    --primary: 218 69% 38%;
+    /* HSL KONVERSI DARI #0D47A1 (BIRU UTAMA) */
+    --primary: 217 85% 34%;
     --primary-foreground: 210 40% 98%;
 
-    /* HSL KONVERSI DARI #F4C430 UNTUK KOMPONEN SHADCN UI */
-    --secondary: 45 90% 57%; 
+    /* HSL KONVERSI DARI #FFD500 (KUNING UTAMA) */
+    --secondary: 50 100% 50%; 
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 45 90% 57%;
+    --accent: 50 100% 50%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -53,41 +53,30 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     
-    /* Ring fokus mengikuti biru utama */
-    --ring: 218 69% 38%;
-
+    --ring: 217 85% 34%;
     --radius: 0.75rem;
   }
 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 218 69% 48%;
+    --primary: 217 85% 44%;
     --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 45 90% 57%;
+    --secondary: 50 100% 50%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 45 90% 57%;
+    --accent: 50 100% 50%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    
-    --ring: 218 69% 48%;
+    --ring: 217 85% 44%;
   }
 }
 
@@ -96,6 +85,6 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
 }

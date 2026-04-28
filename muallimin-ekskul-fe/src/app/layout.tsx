@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google"; // Ganti ke Google Fonts
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner"; 
 
-// Konfigurasi font otomatis (tidak perlu file manual)
+// Memuat font Plus Jakarta Sans secara efisien
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-jakarta",
@@ -12,7 +12,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "Sistem Ekstrakurikuler Muallimin",
-  description: "Aplikasi Presensi dan Manajemen Ekskul",
+  description: "Aplikasi Presensi dan Manajemen Ekskul Madrasah Mu'allimin Muhammadiyah Yogyakarta",
 };
 
 export default function RootLayout({
@@ -23,9 +23,11 @@ export default function RootLayout({
   return (
     <html lang="id" className="scroll-smooth">
       <body
-        className={`${plusJakartaSans.variable} font-sans antialiased bg-[#F8FAFC]`}
+        className={`${plusJakartaSans.variable} font-sans antialiased`}
       >
         {children}
+        
+        {/* Notifikasi Toaster di tengah atas untuk semua halaman */}
         <Toaster position="top-center" richColors />
       </body>
     </html>
