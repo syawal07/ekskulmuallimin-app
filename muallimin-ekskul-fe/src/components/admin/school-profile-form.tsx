@@ -66,15 +66,20 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
     event.preventDefault()
     setLoading(true)
 
-    const formData = new FormData(event.currentTarget)
-    const res = await updateCompanyProfile(formData)
+    try {
+      const formData = new FormData(event.currentTarget)
+      const res = await updateCompanyProfile(formData)
 
-    if (res?.error) {
-      toast.error(res.error)
-    } else {
-      toast.success("Perubahan berhasil disimpan!")
+      if (res?.error) {
+        toast.error(res.error)
+      } else {
+        toast.success("Perubahan berhasil disimpan!")
+      }
+    } catch (err) {
+      toast.error("Gagal terhubung ke server. Pastikan ukuran gambar tidak terlalu besar.")
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
@@ -146,24 +151,24 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
                 <textarea name="hero_description" defaultValue={initialData.hero_description || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
               <div className="space-y-2">
-                  <Label>Foto Banner (Background)</Label>
-                  <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center bg-slate-50">
-                    {initialData.hero_image_url && (
-                      <img src={getImageUrl(initialData.hero_image_url)} alt="Hero" className="h-32 mx-auto mb-2 object-cover rounded-md" />
-                    )}
-                    <input 
-                      type="file" 
-                      name="heroImage" 
-                      accept="image/*" 
-                      className="text-xs text-slate-500 mx-auto"
-                      onChange={handleFileChange}
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1">Maksimal 5MB</p>
-                  </div>
+                <Label>Foto Banner (Background)</Label>
+                <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center bg-slate-50">
+                  {initialData.hero_image_url && (
+                    <img src={getImageUrl(initialData.hero_image_url)} alt="Hero" className="h-32 mx-auto mb-2 object-cover rounded-md" />
+                  )}
+                  <input 
+                    type="file" 
+                    name="heroImage" 
+                    accept="image/*" 
+                    className="text-xs text-slate-500 mx-auto"
+                    onChange={handleFileChange}
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Maksimal 5MB</p>
+                </div>
               </div>
               <div className="space-y-2">
-                  <Label>Tentang Sekolah</Label>
-                  <textarea name="about_text" defaultValue={initialData.about_text || ""} className="flex min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                <Label>Tentang Sekolah</Label>
+                <textarea name="about_text" defaultValue={initialData.about_text || ""} className="flex min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
               <SaveButton loading={loading} />
             </CardContent>
