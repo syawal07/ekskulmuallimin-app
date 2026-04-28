@@ -3,7 +3,23 @@
 @tailwind utilities;
 
 @theme {
+  /* Font Plus Jakarta Sans */
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  /* =========================================================
+     OVERRIDE WARNA TAILWIND DENGAN WARNA RESMI MU'ALLIMIN 
+     ========================================================= */
+  
+  /* PALET BIRU (Primary Blue) */
+  --color-blue-600: #2F66C5; /* Alternatif Terang */
+  --color-blue-700: #1E4FA3; /* Primary Blue (Bg Hero, Header) */
+  --color-blue-800: #153b7d; /* Gelap (Hover, Gradient) */
+  --color-blue-900: #0f2b5c; /* Paling Gelap (Footer) */
+  
+  /* PALET KUNING/ORANYE (Primary Yellow) */
+  --color-amber-400: #FFD84D; /* Alternatif Terang */
+  --color-amber-500: #F4C430; /* Primary Yellow (Tombol, Badge) */
+  --color-amber-600: #D4A017; /* Alternatif Gelap (Hover Tombol, Shadow) */
 }
 
 @layer base {
@@ -17,18 +33,18 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* UPDATE: BIRU UTAMA MUALLIMIN (Sesuai web muallimin.sch.id) */
-    --primary: 221.2 83.2% 53.3%;
+    /* HSL KONVERSI DARI #1E4FA3 UNTUK KOMPONEN SHADCN UI */
+    --primary: 218 69% 38%;
     --primary-foreground: 210 40% 98%;
 
-    /* KUNING/ORANYE MUALLIMIN SEBAGAI SEKUNDER/AKSEN */
-    --secondary: 37.7 92.1% 50.2%; 
+    /* HSL KONVERSI DARI #F4C430 UNTUK KOMPONEN SHADCN UI */
+    --secondary: 45 90% 57%; 
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 37.7 92.1% 50.2%;
+    --accent: 45 90% 57%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -38,7 +54,7 @@
     --input: 214.3 31.8% 91.4%;
     
     /* Ring fokus mengikuti biru utama */
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 218 69% 38%;
 
     --radius: 0.75rem;
   }
@@ -53,16 +69,16 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 218 69% 48%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 37.7 92.1% 50.2%;
+    --secondary: 45 90% 57%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 37.7 92.1% 50.2%;
+    --accent: 45 90% 57%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -70,7 +86,8 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    
+    --ring: 218 69% 48%;
   }
 }
 
