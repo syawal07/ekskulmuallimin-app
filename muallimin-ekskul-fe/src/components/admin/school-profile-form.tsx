@@ -46,7 +46,7 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
   const getImageUrl = (path?: string) => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
-    const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL || process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BACKEND_URL || '';
+    const storageUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NEXT_PUBLIC_API_BACKEND_URL || '').replace(/\/api$/, '');
     const cleanBase = storageUrl.endsWith('/') ? storageUrl.slice(0, -1) : storageUrl;
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
     return `${cleanBase}${cleanPath}`;

@@ -109,7 +109,11 @@ export default async function LandingPage() {
           <div className="flex items-center gap-4 group cursor-pointer">
             <div className="relative w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl shadow-sm p-1 transition-transform duration-300 group-hover:scale-105 group-hover:shadow-md">
               <Image 
-                src={profile?.logo_url ? `${process.env.NEXT_PUBLIC_API_BACKEND_URL?.replace('/api', '')}${profile.logo_url}` : logo} 
+                src={
+                  profile?.logo_url 
+                    ? `${(process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$/, '')}/${profile.logo_url.replace(/^\//, '')}`
+                    : logo
+                }
                 alt="Logo" 
                 fill
                 unoptimized 
