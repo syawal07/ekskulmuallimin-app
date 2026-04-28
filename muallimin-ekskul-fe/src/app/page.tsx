@@ -135,8 +135,7 @@ export default async function LandingPage() {
             <div className="hidden lg:flex gap-8 text-sm font-semibold text-blue-50">
               <Link href="#about" className="hover:text-amber-400 transition-colors">Beranda</Link>
               <Link href="#gallery" className="hover:text-amber-400 transition-colors">Galeri</Link>
-              <Link href="#news" className="hover:text-amber-400 transition-colors">Informasi</Link>
-              <Link href="#stats" className="hover:text-amber-400 transition-colors">Pendaftaran</Link>
+              <Link href="#news" className="hover:text-amber-400 transition-colors">Berita</Link>
             </div>
             <Link href="/login">
               <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg px-6 md:px-8 font-bold transition-all duration-300 shadow-sm">
@@ -174,12 +173,12 @@ export default async function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Link href="/login">
                   <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-base rounded-xl bg-amber-500 text-slate-900 hover:bg-amber-600 font-bold transition-all duration-300 hover:-translate-y-1">
-                    Daftar Sekarang <ArrowRight className="ml-2 w-4 h-4" />
+                    Login Pelatih<ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
                 <Link href="#about">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-base rounded-xl text-white bg-transparent border border-white/30 hover:bg-white/10 font-bold transition-all duration-300">
-                    Pendaftaran Inden
+                    Tentang Kami
                   </Button>
                 </Link>
               </div>
@@ -223,7 +222,7 @@ export default async function LandingPage() {
                   <Users className="w-6 h-6" />
                 </div>
                 <div className="pr-4">
-                  <p className="text-xl font-black text-slate-900 tracking-tight leading-none">100.000+</p>
+                  <p className="text-xl font-black text-slate-900 tracking-tight leading-none">1000+</p>
                   <p className="text-xs text-slate-500 font-bold mt-1">Kader Aktif</p>
                 </div>
               </div>
