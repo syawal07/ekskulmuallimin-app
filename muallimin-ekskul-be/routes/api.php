@@ -82,4 +82,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/mentor/attendance', [AttendanceController::class, 'destroySession']);
     Route::get('/mentor/history', [AttendanceController::class, 'getHistory']);
     Route::get('/mentor/presensi-edit', [AttendanceController::class, 'getPresensiEdit']);
+
+    // Rute Khusus Wali Santri
+    Route::get('/wali/dashboard', [App\Http\Controllers\WaliController::class, 'dashboard']);
+    Route::get('/wali/attendances', [App\Http\Controllers\WaliController::class, 'attendances']);
+    Route::get('/wali/assessments', [App\Http\Controllers\WaliController::class, 'assessments']);
 });

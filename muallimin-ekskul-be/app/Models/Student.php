@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Student extends Model
+class Student extends Authenticatable
 {
-    use HasUuids;
+    use HasApiTokens, HasUuids;
 
     protected $fillable = ['name', 'nis', 'class', 'is_active', 'excul_id'];
 
@@ -15,15 +16,18 @@ class Student extends Model
         'is_active' => 'boolean',
     ];
 
-    // Relasi: Siswa ini ikut ekskul apa
     public function excul()
     {
         return $this->belongsTo(Excul::class);
     }
 
-    // Relasi: Riwayat presensi siswa
     public function attendances()
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function assessments()
+    {
+        return $this->hasMany(Assessment::class);
     }
 }
