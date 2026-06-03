@@ -48,7 +48,8 @@ async function getPublicNews(): Promise<NewsItem[]> {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
     if (!apiUrl) return [];
     
-    const res = await fetch(`${apiUrl}/public/news`, { cache: 'no-store' });
+    // PERBAIKAN: Menggunakan revalidate 60 detik agar website terbuka secepat kilat
+    const res = await fetch(`${apiUrl}/public/news`, { next: { revalidate: 60 } });
     if (!res.ok) return [];
     
     const result = await res.json();
@@ -65,7 +66,8 @@ async function getLandingData(): Promise<LandingData | null> {
       return null;
     }
 
-    const res = await fetch(`${apiUrl}/landing`, { cache: 'no-store' });
+    // PERBAIKAN: Menggunakan revalidate 60 detik agar website terbuka secepat kilat
+    const res = await fetch(`${apiUrl}/landing`, { next: { revalidate: 60 } });
     
     if (!res.ok) {
       return null;

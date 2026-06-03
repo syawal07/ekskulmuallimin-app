@@ -4,7 +4,6 @@ import { createSession, logout } from "../lib/session";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
-// FIX: Mengganti tipe 'any' menjadi 'unknown' agar ESLint tidak protes
 export async function loginAction(prevState: unknown, formData: FormData) {
   const username = formData.get("username") as string;
   const password = formData.get("password") as string;
@@ -13,7 +12,6 @@ export async function loginAction(prevState: unknown, formData: FormData) {
     return { error: "Username dan password wajib diisi!" };
   }
 
-  // Siapkan variabel rute untuk redirect nanti
   let targetUrl = "";
 
   try {
@@ -45,15 +43,19 @@ export async function loginAction(prevState: unknown, formData: FormData) {
     
     await createSession(token, role);
 
-    // Tentukan URL tujuan, TAPI jangan redirect di sini
-    targetUrl = role === "ADMIN" ? "/admin/dashboard" : "/mentor/dashboard";
+    if (role === "ADMIN") {
+      targetUrl = "/admin/dashboard";
+    } else if (role === "MENTOR") {
+      targetUrl = "/mentor/dashboard";
+    } else if (role === "wali") {
+      targetUrl = "/wali/dashboard";
+    }
 
   } catch (error) {
     console.error("Fetch error:", error);
     return { error: "Server Backend sedang bermasalah." };
   }
 
-  // FIX: Lakukan redirect di LUAR blok try-catch agar sistem NEXT_REDIRECT bekerja normal
   if (targetUrl) {
     redirect(targetUrl);
   }
@@ -78,11 +80,9 @@ export async function logoutAction() {
     console.error("Gagal memanggil API logout backend", error);
   }
 
-  // Pastikan cookies dihapus secara total di luar blok try
   const cookieStore = await cookies();
   cookieStore.delete("user_name");
   cookieStore.delete("user_username");
   
-  // Panggil fungsi logout() yang berisi perintah redirect ke '/login'
   await logout(); 
 }
