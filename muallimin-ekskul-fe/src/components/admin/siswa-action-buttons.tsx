@@ -2,10 +2,18 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Trash2, Loader2, Pencil } from "lucide-react"
+import { Trash2, Loader2, Pencil, Settings2 } from "lucide-react"
 import { deleteStudent } from "@/actions/studentAction"
 import { toast } from "sonner"
-import Link from "next/link" // <--- Wajib Import ini
+import Link from "next/link"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,24 +23,37 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
+interface Excul {
+  id: string;
+  name: string;
+}
+
+interface StudentRecord {
+  id: string;
+  name: string;
+  class: string;
+  nis: string | null;
+  excul: Excul | null;
+}
+
 export default function SiswaActionButtons({ 
-  studentId, 
-  studentName 
+  studentName,
+  records
 }: { 
-  studentId: string
-  studentName: string 
+  studentName: string
+  records: StudentRecord[]
 }) {
   const [loading, setLoading] = useState(false)
-  const [openDelete, setOpenDelete] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const handleDelete = async () => {
+    if (!deleteId) return
     setLoading(true)
-    const res = await deleteStudent(studentId)
+    const res = await deleteStudent(deleteId)
     setLoading(false)
-    setOpenDelete(false)
+    setDeleteId(null)
 
     if (res?.error) {
       toast.error(res.error)
@@ -42,37 +63,75 @@ export default function SiswaActionButtons({
   }
 
   return (
-    <div className="flex justify-end gap-2">
-      
-      {/* --- BAGIAN EDIT (YANG TADI BELUM JALAN) --- */}
-      <Link href={`/admin/siswa/${studentId}/edit`}>
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50" 
-          disabled={loading}
-        >
-          <Pencil className="w-4 h-4" />
-        </Button>
-      </Link>
-      {/* ------------------------------------------- */}
-
-      {/* Bagian Delete (Sudah aman) */}
-      <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
-        <AlertDialogTrigger asChild>
+    <>
+      <Dialog>
+        <DialogTrigger asChild>
           <Button 
             variant="outline" 
-            size="icon" 
-            className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300" 
+            size="sm" 
+            className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 font-bold shadow-sm"
           >
-            <Trash2 className="w-4 h-4" />
+            <Settings2 className="w-4 h-4" /> Kelola Ekskul
           </Button>
-        </AlertDialogTrigger>
+        </DialogTrigger>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Kelola Data Siswa</DialogTitle>
+            <DialogDescription>
+              Daftar partisipasi ekstrakurikuler atas nama <b className="text-slate-800">{studentName}</b>.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4 border rounded-xl overflow-hidden bg-slate-50/50">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-100 border-b">
+                <tr>
+                  <th className="px-4 py-3 font-bold text-slate-700">Nama Ekstrakurikuler</th>
+                  <th className="px-4 py-3 font-bold text-slate-700 text-right">Aksi Data</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {records.map((record) => (
+                  <tr key={record.id} className="hover:bg-white transition-colors">
+                    <td className="px-4 py-3 font-semibold text-slate-800">
+                      {record.excul?.name || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/admin/siswa/${record.id}/edit`}>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50" 
+                            disabled={loading}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          onClick={() => setDeleteId(record.id)}
+                          className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" 
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Siswa?</AlertDialogTitle>
+            <AlertDialogTitle>Hapus Kepesertaan Siswa?</AlertDialogTitle>
             <AlertDialogDescription>
-              Siswa <b>{studentName}</b> akan dihapus permanen.
+              Tindakan ini akan menghapus siswa dari ekstrakurikuler terpilih beserta <b>seluruh riwayat presensi dan nilainya</b>. Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -90,6 +149,6 @@ export default function SiswaActionButtons({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   )
 }

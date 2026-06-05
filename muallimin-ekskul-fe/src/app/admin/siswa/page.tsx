@@ -32,6 +32,13 @@ interface StudentResponse {
   last_page: number;
 }
 
+interface GroupedStudent {
+  name: string;
+  nis: string | null;
+  class: string;
+  records: Student[];
+}
+
 async function getExculs(): Promise<Excul[]> {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
@@ -95,6 +102,22 @@ export default async function AdminSiswaPage({
   const hasNextPage = page < totalPages
   const hasPrevPage = page > 1
 
+  const groupedMap = new Map<string, GroupedStudent>();
+  students.forEach((siswa) => {
+    const key = siswa.nis ? siswa.nis : `${siswa.name}-${siswa.class}`;
+    if (!groupedMap.has(key)) {
+      groupedMap.set(key, {
+        name: siswa.name,
+        nis: siswa.nis,
+        class: siswa.class,
+        records: []
+      });
+    }
+    groupedMap.get(key)!.records.push(siswa);
+  });
+  
+  const groupedStudents = Array.from(groupedMap.values());
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -134,14 +157,14 @@ export default async function AdminSiswaPage({
                 <TableHead className="w-[50px] text-center">No</TableHead>
                 <TableHead>Nama Siswa</TableHead>
                 <TableHead>Kelas / NIS</TableHead>
-                <TableHead>Ekskul</TableHead>
+                <TableHead>Ekskul Aktif</TableHead>
                 <TableHead className="text-right pr-6">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {students.length > 0 ? (
-                students.map((siswa, index) => (
-                  <TableRow key={siswa.id} className="hover:bg-slate-50/50 transition-colors">
+              {groupedStudents.length > 0 ? (
+                groupedStudents.map((siswa, index) => (
+                  <TableRow key={siswa.nis || index} className="hover:bg-slate-50/50 transition-colors">
                     <TableCell className="font-medium text-slate-500 text-center">
                       {(page - 1) * limit + index + 1}
                     </TableCell>
@@ -157,12 +180,16 @@ export default async function AdminSiswaPage({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shadow-none">
-                        {siswa.excul?.name || "-"}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1.5">
+                        {siswa.records.map((record) => (
+                          <Badge key={record.id} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shadow-none">
+                            {record.excul?.name || "-"}
+                          </Badge>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right pr-6">
-                      <SiswaActionButtons studentId={siswa.id} studentName={siswa.name} />
+                      <SiswaActionButtons studentName={siswa.name} records={siswa.records} />
                     </TableCell>
                   </TableRow>
                 ))

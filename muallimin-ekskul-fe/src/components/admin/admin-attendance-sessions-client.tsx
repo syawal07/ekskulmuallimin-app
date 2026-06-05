@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Filter, Users, CalendarDays, ExternalLink, X, Loader2, Image as ImageIcon, FileSpreadsheet } from "lucide-react"
+import { Calendar, Filter, Users, CalendarDays, ExternalLink, X, Loader2, Image as ImageIcon, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { fetchAttendanceSessions } from "@/actions/attendanceAction"
@@ -68,6 +68,8 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
   const [selectedExcul, setSelectedExcul] = useState("all")
   
   const [sessionList, setSessionList] = useState<SessionData[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [selectedSession, setSelectedSession] = useState<SessionData | null>(null)
@@ -79,21 +81,35 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
     toast.success("Rentang tanggal diatur ke Periode Cut-off!")
   }
 
-  async function handleFilter() {
+  async function fetchSessions(page: number) {
     if (!startDate || !endDate || !selectedExcul) {
       return toast.error("Lengkapi filter Tanggal dan Ekskul.")
     }
     setLoading(true)
     setHasSearched(true)
-    const res = await fetchAttendanceSessions(selectedExcul, startDate, endDate)
+    const res = await fetchAttendanceSessions(selectedExcul, startDate, endDate, page)
     if (res?.error) {
       toast.error(res.error)
       setSessionList([])
-    } else if (res?.data) {
+      setTotalPages(1)
+    } else if (res?.data && res?.meta) {
       setSessionList(res.data)
+      setCurrentPage(res.meta.current_page)
+      setTotalPages(res.meta.last_page)
       if (res.data.length === 0) toast.info("Tidak ada riwayat presensi di rentang waktu ini.")
     }
     setLoading(false)
+  }
+
+  async function handleFilter() {
+    setCurrentPage(1)
+    await fetchSessions(1)
+  }
+
+  async function handlePageChange(newPage: number) {
+    if (newPage >= 1 && newPage <= totalPages) {
+      await fetchSessions(newPage)
+    }
   }
 
   const handleExportSession = () => {
@@ -181,47 +197,75 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
               <p>Belum ada mentor yang melakukan input presensi pada periode ini.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {sessionList.map((session) => (
-                <Card key={session.id} className="hover:border-blue-300 transition-colors cursor-pointer flex flex-col h-full bg-white" onClick={() => setSelectedSession(session)}>
-                  <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold text-slate-900 leading-tight">{session.excul_name}</h3>
-                        <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1">
-                          <Users className="w-3 h-3 text-blue-500"/> {session.mentor_name}
-                        </p>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sessionList.map((session) => (
+                  <Card key={session.id} className="hover:border-blue-300 transition-colors cursor-pointer flex flex-col h-full bg-white shadow-sm" onClick={() => setSelectedSession(session)}>
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-slate-900 leading-tight">{session.excul_name}</h3>
+                          <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1">
+                            <Users className="w-3 h-3 text-blue-500"/> {session.mentor_name}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="bg-white whitespace-nowrap font-semibold shadow-sm">
+                          {new Date(session.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className="bg-white whitespace-nowrap font-semibold">
-                        {new Date(session.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-4 flex-1 flex flex-col justify-between">
-                    <div className="grid grid-cols-4 gap-2 mb-4 text-center">
-                      <div className="bg-green-50 p-2 rounded-lg border border-green-100">
-                        <div className="text-[10px] text-green-600 font-bold uppercase tracking-wider mb-0.5">Hadir</div>
-                        <div className="text-lg font-black text-green-700">{session.stats.HADIR}</div>
+                    </CardHeader>
+                    <CardContent className="pt-4 flex-1 flex flex-col justify-between">
+                      <div className="grid grid-cols-4 gap-2 mb-4 text-center">
+                        <div className="bg-green-50 p-2 rounded-lg border border-green-100">
+                          <div className="text-[10px] text-green-600 font-bold uppercase tracking-wider mb-0.5">Hadir</div>
+                          <div className="text-lg font-black text-green-700">{session.stats.HADIR}</div>
+                        </div>
+                        <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
+                          <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-0.5">Izin</div>
+                          <div className="text-lg font-black text-blue-700">{session.stats.IZIN}</div>
+                        </div>
+                        <div className="bg-yellow-50 p-2 rounded-lg border border-yellow-100">
+                          <div className="text-[10px] text-yellow-600 font-bold uppercase tracking-wider mb-0.5">Sakit</div>
+                          <div className="text-lg font-black text-yellow-700">{session.stats.SAKIT}</div>
+                        </div>
+                        <div className="bg-red-50 p-2 rounded-lg border border-red-100">
+                          <div className="text-[10px] text-red-600 font-bold uppercase tracking-wider mb-0.5">Alpha</div>
+                          <div className="text-lg font-black text-red-700">{session.stats.ALPHA}</div>
+                        </div>
                       </div>
-                      <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
-                        <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-0.5">Izin</div>
-                        <div className="text-lg font-black text-blue-700">{session.stats.IZIN}</div>
-                      </div>
-                      <div className="bg-yellow-50 p-2 rounded-lg border border-yellow-100">
-                        <div className="text-[10px] text-yellow-600 font-bold uppercase tracking-wider mb-0.5">Sakit</div>
-                        <div className="text-lg font-black text-yellow-700">{session.stats.SAKIT}</div>
-                      </div>
-                      <div className="bg-red-50 p-2 rounded-lg border border-red-100">
-                        <div className="text-[10px] text-red-600 font-bold uppercase tracking-wider mb-0.5">Alpha</div>
-                        <div className="text-lg font-black text-red-700">{session.stats.ALPHA}</div>
-                      </div>
-                    </div>
-                    <Button variant="outline" className="w-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 border-blue-200 font-semibold">
-                      Lihat Detail Kehadiran
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+                      <Button variant="outline" className="w-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 border-blue-200 font-semibold shadow-sm">
+                        Lihat Detail Kehadiran
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              
+              <div className="flex items-center justify-between border-t border-slate-200 pt-4 mt-6">
+                <span className="text-sm font-medium text-slate-500">
+                  Halaman {currentPage} dari {totalPages}
+                </span>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1 || loading}
+                    className="font-bold border-slate-300"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Sebelumnya
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages || loading}
+                    className="font-bold border-slate-300"
+                  >
+                    Selanjutnya <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
@@ -272,7 +316,7 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
               <div>
                 {selectedSession.proofImageUrl ? (
                    <a href={getImageUrl(selectedSession.proofImageUrl)} target="_blank" rel="noopener noreferrer">
-                     <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 font-bold">
+                     <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 font-bold shadow-sm">
                        <ImageIcon className="w-4 h-4"/> Lihat Foto Bukti <ExternalLink className="w-3 h-3 ml-1"/>
                      </Button>
                    </a>
@@ -281,10 +325,10 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
                 )}
               </div>
               <div className="flex gap-3">
-                <Button variant="outline" className="text-green-700 border-green-200 hover:bg-green-50 bg-green-50/50 font-bold" onClick={handleExportSession}>
+                <Button variant="outline" className="text-green-700 border-green-200 hover:bg-green-50 bg-green-50/50 font-bold shadow-sm" onClick={handleExportSession}>
                   <FileSpreadsheet className="w-4 h-4 mr-2"/> Export Excel
                 </Button>
-                <Button onClick={() => setSelectedSession(null)} className="font-bold bg-slate-900 hover:bg-slate-800 text-white">Tutup Detail</Button>
+                <Button onClick={() => setSelectedSession(null)} className="font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md">Tutup Detail</Button>
               </div>
             </div>
           </div>
