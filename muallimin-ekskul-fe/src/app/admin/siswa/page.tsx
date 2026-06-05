@@ -181,10 +181,13 @@ export default async function AdminSiswaPage({
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1.5">
-                        {siswa.records.map((record) => (
-                          <Badge key={record.id} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shadow-none">
-                            {record.excul?.name || "-"}
-                          </Badge>
+                       {siswa.records.filter((record, index, self) =>
+                         index === self.findIndex((r) => r.excul?.id === record.excul?.id)
+                       )
+                       .map((record) => (
+                         <Badge key={record.id} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shadow-none">
+                           {record.excul?.name || "-"}
+                         </Badge>
                         ))}
                       </div>
                     </TableCell>

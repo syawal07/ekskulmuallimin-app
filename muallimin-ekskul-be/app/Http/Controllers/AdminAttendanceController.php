@@ -83,12 +83,14 @@ class AdminAttendanceController extends Controller
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
         $exculId = $request->query('excul_id');
+        $perPage = 15; // Batasi 15 siswa per halaman
 
+        // Paginasi query students
         $students = Student::where('excul_id', $exculId)
             ->where('is_active', true)
             ->orderBy('class')
             ->orderBy('name')
-            ->get();
+            ->paginate($perPage);
 
         $recapData = [];
 
@@ -125,10 +127,16 @@ class AdminAttendanceController extends Controller
             ];
         }
 
+        // Kembalikan beserta meta paginasi
         return response()->json([
             'success' => true,
             'message' => 'Data rekap berhasil diambil',
-            'data' => $recapData
+            'data' => $recapData,
+            'meta' => [
+                'current_page' => $students->currentPage(),
+                'last_page' => $students->lastPage(),
+                'total' => $students->total()
+            ]
         ], 200);
     }
 

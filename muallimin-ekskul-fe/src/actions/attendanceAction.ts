@@ -74,14 +74,14 @@ export async function deleteAttendanceSession(dateStr: string, exculId: string) 
   redirect("/mentor/riwayat")
 }
 
-export async function fetchMonthlyAttendanceRecap(exculId: string, startDate: string, endDate: string) {
+export async function fetchMonthlyAttendanceRecap(exculId: string, startDate: string, endDate: string, page: number = 1) {
   const cookieStore = await cookies()
   const token = cookieStore.get("session_token")?.value
 
   if (!token) return { error: "Sesi habis, silakan login ulang." }
 
   try {
-    const url = `${process.env.NEXT_PUBLIC_API_BACKEND_URL}/admin/attendances/recap?excul_id=${exculId}&start_date=${startDate}&end_date=${endDate}`
+    const url = `${process.env.NEXT_PUBLIC_API_BACKEND_URL}/admin/attendances/recap?excul_id=${exculId}&start_date=${startDate}&end_date=${endDate}&page=${page}`
     const res = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -93,7 +93,11 @@ export async function fetchMonthlyAttendanceRecap(exculId: string, startDate: st
     const result = await res.json()
     if (!res.ok) return { error: result.message || "Gagal mengambil data rekap dari server." }
     
-    return { success: true, data: result.data }
+    return { 
+      success: true, 
+      data: result.data,
+      meta: result.meta 
+    }
   } catch (error) {
     return { error: "Terjadi gangguan koneksi ke server backend." }
   }
