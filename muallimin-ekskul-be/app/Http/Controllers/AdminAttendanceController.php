@@ -142,14 +142,14 @@ class AdminAttendanceController extends Controller
         $query = Attendance::query()
             ->join('students', 'attendances.student_id', '=', 'students.id')
             ->join('exculs', 'students.excul_id', '=', 'exculs.id')
-            ->leftJoin('users as recorders', 'attendances.recorded_by', '=', 'recorders.id')
+            ->leftJoin('users as recorders', 'attendances.recorder_id', '=', 'recorders.id')
             ->whereBetween('attendances.date', [$startDate, $endDate])
             ->select(
                 DB::raw('DATE(attendances.date) as session_date'),
                 'exculs.id as excul_id',
                 'exculs.name as excul_name',
                 DB::raw('MAX(recorders.name) as mentor_name'),
-                DB::raw('MAX(attendances.proofImageUrl) as proofImageUrl')
+                DB::raw('MAX(attendances.proof_image_url) as proofImageUrl')
             )
             ->groupBy('session_date', 'exculs.id', 'exculs.name');
 
