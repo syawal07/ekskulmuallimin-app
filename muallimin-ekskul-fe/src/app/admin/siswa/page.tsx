@@ -163,39 +163,42 @@ export default async function AdminSiswaPage({
             </TableHeader>
             <TableBody>
               {groupedStudents.length > 0 ? (
-                groupedStudents.map((siswa, index) => (
-                  <TableRow key={siswa.nis || index} className="hover:bg-slate-50/50 transition-colors">
-                    <TableCell className="font-medium text-slate-500 text-center">
-                      {(page - 1) * limit + index + 1}
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-bold text-slate-900">{siswa.name}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">
-                          {siswa.class}
-                        </Badge>
-                        {siswa.nis && <span className="text-xs text-slate-400">{siswa.nis}</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1.5">
-                       {siswa.records.filter((record, index, self) =>
-                         index === self.findIndex((r) => r.excul?.id === record.excul?.id)
-                       )
-                       .map((record) => (
-                         <Badge key={record.id} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shadow-none">
-                           {record.excul?.name || "-"}
-                         </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right pr-6">
-                      <SiswaActionButtons studentName={siswa.name} records={siswa.records} />
-                    </TableCell>
-                  </TableRow>
-                ))
+                groupedStudents.map((siswa, index) => {
+                  const uniqueRecords = siswa.records.filter((record, idx, self) =>
+                    idx === self.findIndex((r) => r.excul?.id === record.excul?.id)
+                  );
+
+                  return (
+                    <TableRow key={siswa.nis || index} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="font-medium text-slate-500 text-center">
+                        {(page - 1) * limit + index + 1}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-bold text-slate-900">{siswa.name}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">
+                            {siswa.class}
+                          </Badge>
+                          {siswa.nis && <span className="text-xs text-slate-400">{siswa.nis}</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1.5">
+                          {uniqueRecords.map((record) => (
+                            <Badge key={record.id} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shadow-none">
+                              {record.excul?.name || "-"}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
+                        <SiswaActionButtons studentName={siswa.name} records={siswa.records} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-48 text-center text-slate-500">

@@ -2,13 +2,13 @@
 
 import { useState } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Filter, FileSpreadsheet, Eye, X, AlertCircle, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar, Filter, Users, CalendarDays, ExternalLink, X, Loader2, Image as ImageIcon, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { fetchMonthlyAttendanceRecap } from "@/actions/attendanceAction"
+import { fetchAttendanceSessions } from "@/actions/attendanceAction"
+import * as XLSX from "xlsx"
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -20,42 +20,70 @@ const getStatusColor = (status: string) => {
   }
 }
 
+const formatDateLocal = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const getCurrentCutoff = () => {
-  const today = new Date()
-  const currentDay = today.getDate()
+  const today = new Date();
+  const currentDay = today.getDate();
   let start, end;
   
   if (currentDay <= 19) {
-    start = new Date(today.getFullYear(), today.getMonth() - 1, 20)
-    end = new Date(today.getFullYear(), today.getMonth(), 19)
+    start = new Date(today.getFullYear(), today.getMonth() - 1, 20);
+    end = new Date(today.getFullYear(), today.getMonth(), 19);
   } else {
-    start = new Date(today.getFullYear(), today.getMonth(), 20)
-    end = new Date(today.getFullYear(), today.getMonth() + 1, 19)
+    start = new Date(today.getFullYear(), today.getMonth(), 20);
+    end = new Date(today.getFullYear(), today.getMonth() + 1, 19);
   }
-  return { startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] }
+  
+  return { 
+    startDate: formatDateLocal(start), 
+    endDate: formatDateLocal(end) 
+  };
+};
+
+const getImageUrl = (path?: string | null) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  
+  let baseUrl = process.env.NEXT_PUBLIC_STORAGE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BACKEND_URL || '';
+  
+  baseUrl = baseUrl.replace(/\/api$/, '');
+  baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  
+  return `${baseUrl}${cleanPath}`;
 }
 
 interface Excul { id: string; name: string; }
-interface HistoryRecord { date: string; status: string; notes: string | null; }
-interface RecapData {
-  student_id: string;
-  student_name: string;
-  student_class: string;
-  summary: { hadir: number; izin: number; sakit: number; alpha: number; total_meetings: number; };
-  history: HistoryRecord[];
+interface StudentDetail { name: string; class: string; status: string; notes: string | null; }
+interface SessionData {
+  id: string;
+  date: string;
+  excul_name: string;
+  mentor_name: string;
+  proofImageUrl: string | null;
+  stats: { HADIR: number; IZIN: number; SAKIT: number; ALPHA: number; };
+  students: StudentDetail[];
 }
 
-export default function AdminAttendanceClient({ exculs }: { exculs: Excul[] }) {
+export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excul[] }) {
   const initialDates = getCurrentCutoff()
   const [startDate, setStartDate] = useState(initialDates.startDate)
   const [endDate, setEndDate] = useState(initialDates.endDate)
-  const [selectedExcul, setSelectedExcul] = useState("")
+  const [selectedExcul, setSelectedExcul] = useState("all")
   
-  const [dataList, setDataList] = useState<RecapData[]>([])
+  const [sessionList, setSessionList] = useState<SessionData[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [selectedStudent, setSelectedStudent] = useState<RecapData | null>(null)
+  const [hasSearched, setHasSearched] = useState(false)
+  const [selectedSession, setSelectedSession] = useState<SessionData | null>(null)
 
   const setCutoffThisMonth = () => {
     const dates = getCurrentCutoff()
@@ -64,34 +92,57 @@ export default function AdminAttendanceClient({ exculs }: { exculs: Excul[] }) {
     toast.success("Rentang tanggal diatur ke Periode Cut-off!")
   }
 
-  async function fetchRecapData(page: number) {
+  async function fetchSessions(page: number) {
     if (!startDate || !endDate || !selectedExcul) {
-      return toast.error("Lengkapi filter Tanggal dan Ekskul terlebih dahulu.")
+      return toast.error("Lengkapi filter Tanggal dan Ekskul.")
     }
     setLoading(true)
-    const res = await fetchMonthlyAttendanceRecap(selectedExcul, startDate, endDate, page)
+    setHasSearched(true)
+    const res = await fetchAttendanceSessions(selectedExcul, startDate, endDate, page)
     if (res?.error) {
       toast.error(res.error)
-      setDataList([])
+      setSessionList([])
       setTotalPages(1)
     } else if (res?.data && res?.meta) {
-      setDataList(res.data)
+      setSessionList(res.data)
       setCurrentPage(res.meta.current_page)
       setTotalPages(res.meta.last_page)
-      if (res.data.length === 0) toast.info("Tidak ada data di rentang tanggal tersebut.")
+      if (res.data.length === 0) toast.info("Tidak ada riwayat presensi di rentang waktu ini.")
     }
     setLoading(false)
   }
 
   async function handleFilter() {
     setCurrentPage(1)
-    await fetchRecapData(1)
+    await fetchSessions(1)
   }
 
   async function handlePageChange(newPage: number) {
     if (newPage >= 1 && newPage <= totalPages) {
-      await fetchRecapData(newPage)
+      await fetchSessions(newPage)
     }
+  }
+
+  const handleExportSession = () => {
+    if (!selectedSession) return
+
+    const formattedData = selectedSession.students.map((student, idx) => ({
+      "No": idx + 1,
+      "Nama Siswa": student.name,
+      "Kelas": student.class,
+      "Status Kehadiran": student.status,
+      "Catatan Mentor": student.notes || '-'
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(formattedData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Detail Kehadiran")
+
+    const safeExculName = selectedSession.excul_name.replace(/[^a-zA-Z0-9]/g, '_')
+    const fileName = `Presensi_${safeExculName}_${selectedSession.date}.xlsx`
+    
+    XLSX.writeFile(workbook, fileName)
+    toast.success("File Excel berhasil diunduh!")
   }
 
   return (
@@ -99,175 +150,197 @@ export default function AdminAttendanceClient({ exculs }: { exculs: Excul[] }) {
       <Card className="border-slate-200 shadow-sm">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-5">
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
-              <div className="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto">
-                
-                <div className="space-y-2 w-full md:w-auto">
-                  <label className="text-sm font-medium text-slate-700">Tanggal Mulai</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-                    <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="pl-9" />
-                  </div>
+            <div className="flex flex-col md:flex-row gap-3 items-end">
+              
+              <div className="space-y-2 w-full md:w-auto">
+                <label className="text-sm font-medium text-slate-700">Tanggal Mulai</label>
+                <div className="relative">
+                  <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="pl-9" />
                 </div>
-
-                <div className="space-y-2 w-full md:w-auto">
-                  <label className="text-sm font-medium text-slate-700">Tanggal Akhir (Cut-off)</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-                    <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="pl-9" />
-                  </div>
-                </div>
-
-                <div className="space-y-2 w-full md:w-64">
-                  <label className="text-sm font-medium text-slate-700">Pilih Ekskul</label>
-                  <Select value={selectedExcul} onValueChange={setSelectedExcul}>
-                    <SelectTrigger><SelectValue placeholder="-- Pilih Ekskul --" /></SelectTrigger>
-                    <SelectContent>{exculs.map((ex) => (<SelectItem key={ex.id} value={ex.id}>{ex.name}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-
-                <Button onClick={handleFilter} className="mb-[2px] gap-2 bg-emerald-600 hover:bg-emerald-700">
-                  <Filter className="w-4 h-4" /> Tampilkan Rekap
-                </Button>
               </div>
 
-              {dataList.length > 0 && (
-                <a href={`/api/export-recap?exculId=${selectedExcul}&startDate=${startDate}&endDate=${endDate}`}>
-                  <Button variant="outline" className="mb-[2px] gap-2 border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100">
-                    <FileSpreadsheet className="w-4 h-4" /> Export Excel
-                  </Button>
-                </a>
-              )}
+              <div className="space-y-2 w-full md:w-auto">
+                <label className="text-sm font-medium text-slate-700">Tanggal Akhir</label>
+                <div className="relative">
+                  <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="pl-9" />
+                </div>
+              </div>
+
+              <div className="space-y-2 w-full md:w-72">
+                <label className="text-sm font-medium text-slate-700">Pilih Ekskul</label>
+                <Select value={selectedExcul} onValueChange={setSelectedExcul}>
+                  <SelectTrigger><SelectValue placeholder="Semua Ekskul" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="font-bold text-blue-600">Lihat Semua Ekskul</SelectItem>
+                    {exculs.map((ex) => (<SelectItem key={ex.id} value={ex.id}>{ex.name}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button onClick={handleFilter} className="mb-[2px] gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm">
+                <Filter className="w-4 h-4" /> Cari Riwayat
+              </Button>
             </div>
             
             <div>
-              <Button variant="link" size="sm" onClick={setCutoffThisMonth} className="text-blue-600 p-0 h-auto font-medium">
+              <Button variant="link" size="sm" onClick={setCutoffThisMonth} className="text-amber-600 hover:text-amber-700 p-0 h-auto font-bold tracking-tight">
                 ✨ Set ke Periode Bulan Ini (Tgl 20 - 19)
               </Button>
             </div>
           </div>
         </CardHeader>
         
-        <CardContent className="p-0">
+        <CardContent className="p-6 bg-slate-50/30">
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center text-slate-500">
               <Loader2 className="w-8 h-8 animate-spin mb-4 text-blue-600" />
-              <p>Mengkalkulasi rekapitulasi data...</p>
+              <p>Mencari riwayat log presensi...</p>
+            </div>
+          ) : !hasSearched ? (
+            <div className="py-16 text-center text-slate-500">
+              <CalendarDays className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+              <p>Atur filter tanggal dan ekskul, lalu klik <b className="text-blue-600">Cari Riwayat</b>.</p>
+            </div>
+          ) : sessionList.length === 0 ? (
+            <div className="py-16 text-center text-slate-500">
+              <p>Belum ada mentor yang melakukan input presensi pada periode ini.</p>
             </div>
           ) : (
-            <>
-              <Table>
-                <TableHeader className="bg-slate-100">
-                  <TableRow>
-                    <TableHead className="w-[50px] text-center font-bold">No</TableHead>
-                    <TableHead className="font-bold">Nama Siswa</TableHead>
-                    <TableHead className="font-bold">Kelas</TableHead>
-                    <TableHead className="text-center font-bold">Total Pertemuan</TableHead>
-                    <TableHead className="text-center font-bold text-green-700">Hadir (H)</TableHead>
-                    <TableHead className="text-center font-bold text-blue-700">Izin (I)</TableHead>
-                    <TableHead className="text-center font-bold text-yellow-700">Sakit (S)</TableHead>
-                    <TableHead className="text-center font-bold text-red-700">Alpha (A)</TableHead>
-                    <TableHead className="text-center font-bold">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {dataList.length === 0 ? (
-                    <TableRow><TableCell colSpan={9} className="h-48 text-center text-slate-500">Silakan pilih Tanggal dan Ekskul terlebih dahulu.</TableCell></TableRow>
-                  ) : (
-                    dataList.map((data, index) => {
-                      const isWarning = data.summary.alpha >= 3;
-                      const displayIndex = (currentPage - 1) * 15 + index + 1;
-                      return (
-                        <TableRow key={data.student_id} className={`transition-colors ${isWarning ? 'bg-red-50/70 hover:bg-red-50' : 'hover:bg-slate-50'}`}>
-                          <TableCell className="text-center text-slate-500">{displayIndex}</TableCell>
-                          <TableCell className="font-bold text-slate-900">
-                            <div className="flex items-center gap-2">
-                              {data.student_name}
-                              {isWarning && <span title="Sering Alpha (Lebih dari 3x)"><AlertCircle className="w-4 h-4 text-red-500" /></span>}
-                            </div>
-                          </TableCell>
-                          <TableCell>{data.student_class}</TableCell>
-                          <TableCell className="text-center font-bold">{data.summary.total_meetings}</TableCell>
-                          <TableCell className="text-center font-medium text-green-600">{data.summary.hadir}</TableCell>
-                          <TableCell className="text-center font-medium text-blue-600">{data.summary.izin}</TableCell>
-                          <TableCell className="text-center font-medium text-yellow-600">{data.summary.sakit}</TableCell>
-                          <TableCell className={`text-center font-bold ${isWarning ? 'text-red-600 text-lg' : 'text-slate-600'}`}>{data.summary.alpha}</TableCell>
-                          <TableCell className="text-center">
-                            <Button size="sm" variant="outline" className="text-blue-600 bg-white" onClick={() => setSelectedStudent(data)}>
-                              <Eye className="w-4 h-4 mr-1"/> Detail
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })
-                  )}
-                </TableBody>
-              </Table>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sessionList.map((session) => (
+                  <Card key={session.id} className="hover:border-blue-300 transition-colors cursor-pointer flex flex-col h-full bg-white shadow-sm" onClick={() => setSelectedSession(session)}>
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-slate-900 leading-tight">{session.excul_name}</h3>
+                          <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1">
+                            <Users className="w-3 h-3 text-blue-500"/> {session.mentor_name}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="bg-white whitespace-nowrap font-semibold shadow-sm">
+                          {new Date(session.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-4 flex-1 flex flex-col justify-between">
+                      <div className="grid grid-cols-4 gap-2 mb-4 text-center">
+                        <div className="bg-green-50 p-2 rounded-lg border border-green-100">
+                          <div className="text-[10px] text-green-600 font-bold uppercase tracking-wider mb-0.5">Hadir</div>
+                          <div className="text-lg font-black text-green-700">{session.stats.HADIR}</div>
+                        </div>
+                        <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
+                          <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-0.5">Izin</div>
+                          <div className="text-lg font-black text-blue-700">{session.stats.IZIN}</div>
+                        </div>
+                        <div className="bg-yellow-50 p-2 rounded-lg border border-yellow-100">
+                          <div className="text-[10px] text-yellow-600 font-bold uppercase tracking-wider mb-0.5">Sakit</div>
+                          <div className="text-lg font-black text-yellow-700">{session.stats.SAKIT}</div>
+                        </div>
+                        <div className="bg-red-50 p-2 rounded-lg border border-red-100">
+                          <div className="text-[10px] text-red-600 font-bold uppercase tracking-wider mb-0.5">Alpha</div>
+                          <div className="text-lg font-black text-red-700">{session.stats.ALPHA}</div>
+                        </div>
+                      </div>
+                      <Button variant="outline" className="w-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 border-blue-200 font-semibold shadow-sm">
+                        Lihat Detail Kehadiran
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
               
-              {dataList.length > 0 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-                  <span className="text-sm font-medium text-slate-500">
-                    Halaman {currentPage} dari {totalPages}
-                  </span>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1 || loading}
-                      className="font-bold border-slate-300"
-                    >
-                      <ChevronLeft className="w-4 h-4 mr-1" /> Sebelumnya
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages || loading}
-                      className="font-bold border-slate-300"
-                    >
-                      Selanjutnya <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </div>
+              <div className="flex items-center justify-between border-t border-slate-200 pt-4 mt-6">
+                <span className="text-sm font-medium text-slate-500">
+                  Halaman {currentPage} dari {totalPages}
+                </span>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1 || loading}
+                    className="font-bold border-slate-300"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Sebelumnya
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages || loading}
+                    className="font-bold border-slate-300"
+                  >
+                    Selanjutnya <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
                 </div>
-              )}
-            </>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {selectedStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+      {selectedSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b flex justify-between items-start bg-slate-50">
               <div>
-                <h3 className="font-bold text-slate-900">Riwayat Kehadiran Siswa</h3>
-                <p className="text-sm text-slate-500">{selectedStudent.student_name} - {selectedStudent.student_class}</p>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">{selectedSession.excul_name}</h2>
+                <div className="flex items-center gap-4 text-sm text-slate-500 mt-1 font-medium">
+                  <span className="flex items-center gap-1.5"><CalendarDays className="w-4 h-4 text-blue-500"/> {new Date(selectedSession.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-amber-500"/> {selectedSession.mentor_name}</span>
+                </div>
               </div>
-              <button onClick={() => setSelectedStudent(null)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5"/></button>
+              <button onClick={() => setSelectedSession(null)} className="text-slate-400 hover:text-slate-700 bg-white p-1 rounded-md border shadow-sm transition-colors"><X className="w-5 h-5"/></button>
             </div>
-            <div className="p-0 max-h-[60vh] overflow-y-auto">
-              {selectedStudent.history.length === 0 ? (
-                <div className="p-8 text-center text-slate-500">Belum ada catatan kehadiran di rentang tanggal ini.</div>
-              ) : (
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-slate-100 text-xs text-slate-500 uppercase sticky top-0">
-                    <tr><th className="px-4 py-3">Tanggal</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Catatan Mentor</th></tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {selectedStudent.history.map((hist, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-medium">{new Date(hist.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</td>
-                        <td className="px-4 py-3"><Badge variant="outline" className={getStatusColor(hist.status)}>{hist.status}</Badge></td>
-                        <td className="px-4 py-3 text-slate-500 text-xs italic">{hist.notes || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+            
+            <div className="p-0 overflow-y-auto flex-1">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-100/80 text-[11px] text-slate-500 uppercase tracking-wider font-bold sticky top-0 shadow-sm backdrop-blur-md">
+                  <tr>
+                    <th className="px-6 py-4 text-center">No</th>
+                    <th className="px-6 py-4">Nama Siswa</th>
+                    <th className="px-6 py-4">Kelas</th>
+                    <th className="px-6 py-4 text-center">Status</th>
+                    <th className="px-6 py-4">Catatan Mentor</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {selectedSession.students.map((student, idx) => (
+                    <tr key={idx} className="hover:bg-blue-50/50 transition-colors">
+                      <td className="px-6 py-3 text-slate-400 text-center font-medium">{idx + 1}</td>
+                      <td className="px-6 py-3 font-bold text-slate-800">{student.name}</td>
+                      <td className="px-6 py-3 text-slate-500 font-medium">{student.class}</td>
+                      <td className="px-6 py-3 text-center">
+                        <Badge variant="outline" className={`font-bold tracking-tight ${getStatusColor(student.status)}`}>{student.status}</Badge>
+                      </td>
+                      <td className="px-6 py-3 text-slate-500 text-xs italic">{student.notes || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="p-4 border-t bg-slate-50 flex justify-end">
-              <Button onClick={() => setSelectedStudent(null)}>Tutup</Button>
+
+            <div className="p-4 border-t bg-slate-50 flex justify-between items-center">
+              <div>
+                {selectedSession.proofImageUrl ? (
+                   <a href={getImageUrl(selectedSession.proofImageUrl)} target="_blank" rel="noopener noreferrer">
+                     <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 font-bold">
+                       <ImageIcon className="w-4 h-4"/> Lihat Foto Bukti <ExternalLink className="w-3 h-3 ml-1"/>
+                     </Button>
+                   </a>
+                ) : (
+                  <span className="text-sm font-medium text-slate-400 flex items-center gap-2"><ImageIcon className="w-4 h-4 opacity-50"/> Tidak ada foto bukti.</span>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" className="text-green-700 border-green-200 hover:bg-green-50 bg-green-50/50 font-bold" onClick={handleExportSession}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2"/> Export Excel
+                </Button>
+                <Button onClick={() => setSelectedSession(null)} className="font-bold bg-slate-900 hover:bg-slate-800 text-white">Tutup Detail</Button>
+              </div>
             </div>
           </div>
         </div>
@@ -277,5 +350,5 @@ export default function AdminAttendanceClient({ exculs }: { exculs: Excul[] }) {
 }
 
 function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={`flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`} {...props} />
+  return <input className={`flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all font-medium ${className}`} {...props} />
 }
