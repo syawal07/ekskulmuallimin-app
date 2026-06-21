@@ -32,23 +32,26 @@ export async function createStudent(prevState: StudentState, formData: FormData)
 
   const name = formData.get("name") as string
   const kelas = formData.get("class") as string
-  const exculId = formData.get("exculId") as string
+  const exculIds = formData.getAll("exculId") as string[]
+  const perkaderanIds = formData.getAll("perkaderanIds") as string[]
 
-  if (!name || !kelas || !exculId) {
-    return { error: "Nama, Kelas, dan Ekskul wajib diisi." }
+  if (!name || !kelas || exculIds.length === 0) {
+    return { error: "Nama, Kelas, dan minimal 1 Ekskul wajib diisi." }
   }
 
   const payload = new FormData()
   payload.append('name', name)
   payload.append('class', kelas)
-  payload.append('excul_id', exculId)
+  
+  exculIds.forEach(id => payload.append('excul_id[]', id))
+  perkaderanIds.forEach(id => payload.append('perkaderan_ids[]', id))
   
   if (formData.get("nis")) payload.append('nis', formData.get("nis") as string)
   if (formData.get("nisn")) payload.append('nisn', formData.get("nisn") as string)
   if (formData.get("jenis_kelamin")) payload.append('jenis_kelamin', formData.get("jenis_kelamin") as string)
   if (formData.get("angkatan")) payload.append('angkatan', formData.get("angkatan") as string)
   if (formData.get("jabatan_organisasi")) payload.append('jabatan_organisasi', formData.get("jabatan_organisasi") as string)
-  if (formData.get("perkaderan_id")) payload.append('perkaderan_id', formData.get("perkaderan_id") as string)
+  if (formData.get("jabatan_perkaderan")) payload.append('jabatan_perkaderan', formData.get("jabatan_perkaderan") as string)
   
   const foto = formData.get("foto") as File
   if (foto && foto.size > 0) {
@@ -161,24 +164,27 @@ export async function updateStudent(
 
   const name = formData.get("name") as string
   const kelas = formData.get("class") as string
-  const exculId = formData.get("exculId") as string
+  const exculIds = formData.getAll("exculId") as string[]
+  const perkaderanIds = formData.getAll("perkaderanIds") as string[]
 
-  if (!name || !kelas || !exculId) {
-    return { error: "Nama, Kelas, dan Ekskul wajib diisi." }
+  if (!name || !kelas || exculIds.length === 0) {
+    return { error: "Nama, Kelas, dan minimal 1 Ekskul wajib diisi." }
   }
 
   const payload = new FormData()
   payload.append('_method', 'PUT')
   payload.append('name', name)
   payload.append('class', kelas)
-  payload.append('excul_id', exculId)
+  
+  exculIds.forEach(id => payload.append('excul_id[]', id))
+  perkaderanIds.forEach(id => payload.append('perkaderan_ids[]', id))
   
   if (formData.get("nis")) payload.append('nis', formData.get("nis") as string)
   if (formData.get("nisn")) payload.append('nisn', formData.get("nisn") as string)
   if (formData.get("jenis_kelamin")) payload.append('jenis_kelamin', formData.get("jenis_kelamin") as string)
   if (formData.get("angkatan")) payload.append('angkatan', formData.get("angkatan") as string)
   if (formData.get("jabatan_organisasi")) payload.append('jabatan_organisasi', formData.get("jabatan_organisasi") as string)
-  if (formData.get("perkaderan_id")) payload.append('perkaderan_id', formData.get("perkaderan_id") as string)
+  if (formData.get("jabatan_perkaderan")) payload.append('jabatan_perkaderan', formData.get("jabatan_perkaderan") as string)
   if (formData.get("is_active")) payload.append('is_active', formData.get("is_active") as string)
   
   const foto = formData.get("foto") as File
@@ -241,7 +247,7 @@ export async function createStudentByMentor(prevState: StudentState, formData: F
         name: name,
         class: kelas,
         nis: nis || null,
-        excul_id: exculId
+        excul_id: [exculId]
       })
     });
 

@@ -21,10 +21,12 @@ export async function createGuru(prevState: unknown, formData: FormData) {
   const name = formData.get("name") as string
   const username = formData.get("username") as string
   const password = formData.get("password") as string
+  const role = formData.get("role") as string
   const exculIds = formData.getAll("exculIds") as string[]
+  const perkaderanIds = formData.getAll("perkaderanIds") as string[]
 
-  if (!name || !username || !password) {
-    return { error: "Nama, Username, dan Password wajib diisi." }
+  if (!name || !username || !password || !role) {
+    return { error: "Nama, Username, Password, dan Role wajib diisi." }
   }
 
   try {
@@ -40,7 +42,9 @@ export async function createGuru(prevState: unknown, formData: FormData) {
         name,
         username,
         password,
-        excul_ids: exculIds
+        role,
+        excul_ids: exculIds,
+        perkaderan_ids: perkaderanIds
       })
     });
 
@@ -70,10 +74,12 @@ export async function updateGuru(id: string, prevState: unknown, formData: FormD
   const name = formData.get("name") as string
   const username = formData.get("username") as string
   const password = formData.get("password") as string
+  const role = formData.get("role") as string
   const exculIds = formData.getAll("exculIds") as string[]
+  const perkaderanIds = formData.getAll("perkaderanIds") as string[]
 
-  if (!name || !username) {
-    return { error: "Nama dan Username wajib diisi." }
+  if (!name || !username || !role) {
+    return { error: "Nama, Username, dan Role wajib diisi." }
   }
 
   try {
@@ -89,7 +95,9 @@ export async function updateGuru(id: string, prevState: unknown, formData: FormD
         name,
         username,
         password: password || null,
-        excul_ids: exculIds
+        role,
+        excul_ids: exculIds,
+        perkaderan_ids: perkaderanIds
       })
     });
 

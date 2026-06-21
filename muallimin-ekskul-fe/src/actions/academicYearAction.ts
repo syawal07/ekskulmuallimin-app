@@ -8,39 +8,32 @@ export type ActionState = {
   success?: boolean
 } | null
 
-export async function createPerkaderan(prevState: ActionState, formData: FormData) {
+export async function createAcademicYear(prevState: ActionState, formData: FormData) {
   const cookieStore = await cookies()
   const token = cookieStore.get("session_token")?.value
   const userRole = cookieStore.get("user_role")?.value
   
   if (userRole !== "ADMIN" || !token) {
-    return { error: "Unauthorized: Hanya Admin yang boleh akses." }
+    return { error: "Unauthorized" }
   }
 
-  const nama_jenjang = formData.get("nama_jenjang") as string
-  const kategori = formData.get("kategori") as string
-  const target_kelas = formData.get("target_kelas") as string
-  const deskripsi = formData.get("deskripsi") as string
+  const name = formData.get("name") as string
+  const semester = formData.get("semester") as string
 
-  if (!nama_jenjang || !kategori) {
-    return { error: "Nama Jenjang dan Kategori wajib diisi." }
+  if (!name || !semester) {
+    return { error: "Tahun Pelajaran dan Semester wajib diisi." }
   }
 
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
-    const res = await fetch(`${apiUrl}/admin/perkaderans`, {
+    const res = await fetch(`${apiUrl}/academic-years`, {
       method: "POST",
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({ 
-        nama_jenjang, 
-        kategori,
-        target_kelas: target_kelas || null,
-        deskripsi 
-      })
+      body: JSON.stringify({ name, semester })
     });
 
     const result = await res.json();
@@ -49,14 +42,14 @@ export async function createPerkaderan(prevState: ActionState, formData: FormDat
       return { error: result.message || "Gagal menyimpan data." }
     }
 
-    revalidatePath("/admin/perkaderan")
+    revalidatePath("/admin/sekolah")
     return { success: true }
   } catch (error) {
     return { error: "Server Backend bermasalah." }
   }
 }
 
-export async function updatePerkaderan(id: string | number, prevState: ActionState, formData: FormData) {
+export async function updateAcademicYear(id: string | number, prevState: ActionState, formData: FormData) {
   const cookieStore = await cookies()
   const token = cookieStore.get("session_token")?.value
   const userRole = cookieStore.get("user_role")?.value
@@ -65,30 +58,23 @@ export async function updatePerkaderan(id: string | number, prevState: ActionSta
     return { error: "Unauthorized" }
   }
 
-  const nama_jenjang = formData.get("nama_jenjang") as string
-  const kategori = formData.get("kategori") as string
-  const target_kelas = formData.get("target_kelas") as string
-  const deskripsi = formData.get("deskripsi") as string
+  const name = formData.get("name") as string
+  const semester = formData.get("semester") as string
 
-  if (!nama_jenjang || !kategori) {
-    return { error: "Nama Jenjang dan Kategori wajib diisi." }
+  if (!name || !semester) {
+    return { error: "Tahun Pelajaran dan Semester wajib diisi." }
   }
 
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
-    const res = await fetch(`${apiUrl}/admin/perkaderans/${id}`, {
+    const res = await fetch(`${apiUrl}/academic-years/${id}`, {
       method: "PUT",
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({ 
-        nama_jenjang, 
-        kategori,
-        target_kelas: target_kelas || null,
-        deskripsi 
-      })
+      body: JSON.stringify({ name, semester })
     });
 
     const result = await res.json();
@@ -97,14 +83,14 @@ export async function updatePerkaderan(id: string | number, prevState: ActionSta
       return { error: result.message || "Gagal memperbarui data." }
     }
 
-    revalidatePath("/admin/perkaderan")
+    revalidatePath("/admin/sekolah")
     return { success: true }
   } catch (error) {
     return { error: "Server Backend bermasalah." }
   }
 }
 
-export async function deletePerkaderan(id: string | number) {
+export async function deleteAcademicYear(id: string | number) {
   const cookieStore = await cookies()
   const token = cookieStore.get("session_token")?.value
   const userRole = cookieStore.get("user_role")?.value
@@ -115,7 +101,7 @@ export async function deletePerkaderan(id: string | number) {
 
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
-    const res = await fetch(`${apiUrl}/admin/perkaderans/${id}`, {
+    const res = await fetch(`${apiUrl}/academic-years/${id}`, {
       method: "DELETE",
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -129,7 +115,39 @@ export async function deletePerkaderan(id: string | number) {
        return { error: result.message || "Gagal menghapus data." }
     }
 
-    revalidatePath("/admin/perkaderan")
+    revalidatePath("/admin/sekolah")
+    return { success: true }
+  } catch (error) {
+    return { error: "Server Backend bermasalah." }
+  }
+}
+
+export async function setActiveAcademicYear(id: string | number) {
+  const cookieStore = await cookies()
+  const token = cookieStore.get("session_token")?.value
+  const userRole = cookieStore.get("user_role")?.value
+  
+  if (userRole !== "ADMIN" || !token) {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+    const res = await fetch(`${apiUrl}/academic-years/${id}/set-active`, {
+      method: "PATCH",
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+       return { error: result.message || "Gagal mengaktifkan Tapel." }
+    }
+
+    revalidatePath("/admin/sekolah")
     return { success: true }
   } catch (error) {
     return { error: "Server Backend bermasalah." }
