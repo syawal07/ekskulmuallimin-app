@@ -13,6 +13,11 @@ type ImportData = {
   name: string
   class: string
   nis?: string
+  nisn?: string
+  jenis_kelamin?: string
+  angkatan?: string
+  jabatan_organisasi?: string
+  perkaderanName?: string
   exculName: string
 }
 
@@ -27,11 +32,27 @@ export async function createStudent(prevState: StudentState, formData: FormData)
 
   const name = formData.get("name") as string
   const kelas = formData.get("class") as string
-  const nis = formData.get("nis") as string
   const exculId = formData.get("exculId") as string
 
   if (!name || !kelas || !exculId) {
     return { error: "Nama, Kelas, dan Ekskul wajib diisi." }
+  }
+
+  const payload = new FormData()
+  payload.append('name', name)
+  payload.append('class', kelas)
+  payload.append('excul_id', exculId)
+  
+  if (formData.get("nis")) payload.append('nis', formData.get("nis") as string)
+  if (formData.get("nisn")) payload.append('nisn', formData.get("nisn") as string)
+  if (formData.get("jenis_kelamin")) payload.append('jenis_kelamin', formData.get("jenis_kelamin") as string)
+  if (formData.get("angkatan")) payload.append('angkatan', formData.get("angkatan") as string)
+  if (formData.get("jabatan_organisasi")) payload.append('jabatan_organisasi', formData.get("jabatan_organisasi") as string)
+  if (formData.get("perkaderan_id")) payload.append('perkaderan_id', formData.get("perkaderan_id") as string)
+  
+  const foto = formData.get("foto") as File
+  if (foto && foto.size > 0) {
+    payload.append('foto', foto)
   }
 
   try {
@@ -40,15 +61,9 @@ export async function createStudent(prevState: StudentState, formData: FormData)
       method: "POST",
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({
-        name: name,
-        class: kelas,
-        nis: nis || null,
-        excul_id: exculId
-      })
+      body: payload
     });
 
     const result = await res.json();
@@ -146,28 +161,40 @@ export async function updateStudent(
 
   const name = formData.get("name") as string
   const kelas = formData.get("class") as string
-  const nis = formData.get("nis") as string
   const exculId = formData.get("exculId") as string
 
   if (!name || !kelas || !exculId) {
     return { error: "Nama, Kelas, dan Ekskul wajib diisi." }
   }
 
+  const payload = new FormData()
+  payload.append('_method', 'PUT')
+  payload.append('name', name)
+  payload.append('class', kelas)
+  payload.append('excul_id', exculId)
+  
+  if (formData.get("nis")) payload.append('nis', formData.get("nis") as string)
+  if (formData.get("nisn")) payload.append('nisn', formData.get("nisn") as string)
+  if (formData.get("jenis_kelamin")) payload.append('jenis_kelamin', formData.get("jenis_kelamin") as string)
+  if (formData.get("angkatan")) payload.append('angkatan', formData.get("angkatan") as string)
+  if (formData.get("jabatan_organisasi")) payload.append('jabatan_organisasi', formData.get("jabatan_organisasi") as string)
+  if (formData.get("perkaderan_id")) payload.append('perkaderan_id', formData.get("perkaderan_id") as string)
+  if (formData.get("is_active")) payload.append('is_active', formData.get("is_active") as string)
+  
+  const foto = formData.get("foto") as File
+  if (foto && foto.size > 0) {
+    payload.append('foto', foto)
+  }
+
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
     const res = await fetch(`${apiUrl}/admin/students/${id}`, {
-      method: "PUT",
+      method: "POST",
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({
-        name: name,
-        class: kelas,
-        nis: nis || null,
-        excul_id: exculId
-      })
+      body: payload
     });
 
     const result = await res.json();
@@ -183,9 +210,9 @@ export async function updateStudent(
 
   redirect("/admin/siswa?success=updated")
 }
+
 export async function createStudentByMentor(prevState: StudentState, formData: FormData) {
   const cookieStore = await cookies()
-  const userRole = cookieStore.get("user_role")?.value
   const token = cookieStore.get("session_token")?.value
   
   if (!token) {

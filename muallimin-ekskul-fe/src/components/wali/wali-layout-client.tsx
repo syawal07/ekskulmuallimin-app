@@ -7,12 +7,10 @@ import { LayoutDashboard, LogOut, Menu, X, User, Activity } from "lucide-react"
 import { logoutAction } from "@/actions/authAction"
 import { Button } from "@/components/ui/button"
 
-// 1. Keluarkan navItems agar bisa diakses secara global di file ini
 const navItems = [
   { name: "Dashboard Wali", href: "/wali/dashboard", icon: LayoutDashboard },
 ]
 
-// 2. Keluarkan SidebarContent dan jadikan komponen mandiri dengan Props
 function SidebarContent({
   pathname,
   setIsMobileMenuOpen,
@@ -24,7 +22,6 @@ function SidebarContent({
 }) {
   return (
     <>
-      {/* Brand / Logo Area */}
       <div className="h-20 flex items-center px-8 border-b border-white/10">
         <div className="flex items-center gap-3">
           <div className="bg-white p-2 rounded-xl shadow-sm">
@@ -36,7 +33,6 @@ function SidebarContent({
         </div>
       </div>
 
-      {/* Navigation Links */}
       <nav className="flex-1 px-4 py-8 space-y-2">
         {navItems.map((item) => {
           const Icon = item.icon
@@ -59,7 +55,6 @@ function SidebarContent({
         })}
       </nav>
 
-      {/* Profile & Logout Area */}
       <div className="p-5 border-t border-white/10 bg-black/10">
         <div className="flex items-center gap-3 mb-5 px-1">
           <div className="h-11 w-11 rounded-full bg-blue-500/30 flex items-center justify-center text-blue-100 border border-blue-400/30 shrink-0">
@@ -85,7 +80,6 @@ function SidebarContent({
   )
 }
 
-// 3. Komponen Utama
 export default function WaliLayoutClient({
   children,
   user,
@@ -99,7 +93,6 @@ export default function WaliLayoutClient({
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans">
       
-      {/* SIDEBAR DESKTOP */}
       <aside className="hidden md:flex w-72 flex-col bg-gradient-to-b from-blue-900 via-blue-800 to-indigo-950 shadow-2xl z-20">
         <SidebarContent 
           pathname={pathname} 
@@ -108,10 +101,8 @@ export default function WaliLayoutClient({
         />
       </aside>
 
-      {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
-        {/* Header Mobile (Hanya tampil di layar kecil) */}
         <header className="md:hidden bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-4 h-16 shadow-sm">
           <div className="flex items-center gap-2">
             <div className="bg-blue-700 p-1.5 rounded-lg">
@@ -127,22 +118,18 @@ export default function WaliLayoutClient({
           </button>
         </header>
 
-        {/* Layout Area Konten */}
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
 
-      {/* SIDEBAR MOBILE (Overlay & Drawer) */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          {/* Dark Overlay background */}
           <div 
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
             onClick={() => setIsMobileMenuOpen(false)}
           ></div>
           
-          {/* Drawer Panel */}
           <div className="relative flex-1 flex flex-col max-w-[280px] w-full bg-gradient-to-b from-blue-900 via-blue-800 to-indigo-950 shadow-2xl animate-in slide-in-from-left duration-300">
             <button 
               onClick={() => setIsMobileMenuOpen(false)}

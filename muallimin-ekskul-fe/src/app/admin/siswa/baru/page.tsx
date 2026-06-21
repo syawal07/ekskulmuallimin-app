@@ -12,26 +12,39 @@ interface Excul {
   name: string;
 }
 
-async function getExculs(): Promise<Excul[]> {
+interface Perkaderan {
+  id: number;
+  nama_jenjang: string;
+}
+
+async function getRequiredData(): Promise<{ exculs: Excul[], perkaderans: Perkaderan[] }> {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
     const token = await getToken();
-    if (!apiUrl || !token) return [];
+    if (!apiUrl || !token) return { exculs: [], perkaderans: [] };
 
-    const res = await fetch(`${apiUrl}/admin/exculs`, {
-      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
-      cache: 'no-store'
-    });
-    if (!res.ok) return [];
-    const result = await res.json();
-    return result.data as Excul[];
+    const [exculRes, perkaderanRes] = await Promise.all([
+      fetch(`${apiUrl}/admin/exculs`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+        cache: 'no-store'
+      }),
+      fetch(`${apiUrl}/admin/perkaderans`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+        cache: 'no-store'
+      })
+    ]);
+
+    const exculData = exculRes.ok ? (await exculRes.json()).data : [];
+    const perkaderanData = perkaderanRes.ok ? (await perkaderanRes.json()).data : [];
+
+    return { exculs: exculData, perkaderans: perkaderanData };
   } catch (e) {
-    return [];
+    return { exculs: [], perkaderans: [] };
   }
 }
 
 export default async function AddStudentPage() {
-  const exculs = await getExculs()
+  const { exculs, perkaderans } = await getRequiredData()
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -43,7 +56,7 @@ export default async function AddStudentPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Tambah Siswa Baru</h1>
-          <p className="text-slate-500 text-sm">Daftarkan siswa ke dalam ekstrakurikuler.</p>
+          <p className="text-slate-500 text-sm">Daftarkan data induk, ekskul, dan perkaderan siswa.</p>
         </div>
       </div>
 
@@ -54,13 +67,13 @@ export default async function AddStudentPage() {
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
-              <CardTitle className="text-base text-slate-800">Form Data Siswa</CardTitle>
-              <CardDescription>Pastikan nama dan pilihan ekskul benar.</CardDescription>
+              <CardTitle className="text-base text-slate-800">Form Data Siswa Terintegrasi</CardTitle>
+              <CardDescription>Pastikan seluruh identitas diisi dengan benar.</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6">
-          <CreateStudentForm exculs={exculs} />
+          <CreateStudentForm exculs={exculs} perkaderans={perkaderans} />
         </CardContent>
       </Card>
     </div>

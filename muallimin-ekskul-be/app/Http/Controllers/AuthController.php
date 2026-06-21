@@ -29,16 +29,29 @@ class AuthController extends Controller
 
             $token = $user->createToken('auth_token')->plainTextToken;
 
+            // Siapkan Data User
+            $userData = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'role' => $user->role,
+            ];
+
+            // JIKA ROLE ADALAH MENTOR, CEK WEWENANGNYA
+            // Ini akan sangat memudahkan Frontend Next.js untuk merender Sidebar
+            if ($user->role === 'MENTOR') {
+                // Asumsi relasi lama ke ekskul di model User bernama 'exculs'
+                $userData['is_mentor_ekskul'] = $user->exculs()->exists(); 
+                
+                // Relasi baru yang baru saja Anda tambahkan
+                $userData['is_mentor_perkaderan'] = $user->perkaderans()->exists();
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Login berhasil',
                 'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'username' => $user->username,
-                        'role' => $user->role,
-                    ],
+                    'user' => $userData,
                     'token' => $token
                 ]
             ], 200);
@@ -66,7 +79,7 @@ class AuthController extends Controller
                         'id' => $student->id,
                         'name' => $student->name,
                         'username' => $student->nis,
-                        'role' => 'wali', // Di-hardcode agar frontend (middleware) mengenali role ini
+                        'role' => 'wali', // Di-hardcode agar frontend mengenali
                     ],
                     'token' => $token
                 ]

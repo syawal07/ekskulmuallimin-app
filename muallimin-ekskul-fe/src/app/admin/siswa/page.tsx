@@ -18,12 +18,27 @@ interface Excul {
   name: string;
 }
 
+interface Perkaderan {
+  id: number;
+  nama_jenjang: string;
+}
+
+interface PerkaderanStudent {
+  id: number;
+  status: string;
+  perkaderan?: Perkaderan;
+}
+
 interface Student {
   id: string;
   name: string;
   class: string;
   nis: string | null;
+  nisn: string | null;
+  angkatan: string | null;
+  jabatan_organisasi: string | null;
   excul: Excul | null;
+  perkaderan_students?: PerkaderanStudent[];
 }
 
 interface StudentResponse {
@@ -35,7 +50,11 @@ interface StudentResponse {
 interface GroupedStudent {
   name: string;
   nis: string | null;
+  nisn: string | null;
   class: string;
+  angkatan: string | null;
+  jabatan_organisasi: string | null;
+  perkaderan_students: PerkaderanStudent[];
   records: Student[];
 }
 
@@ -103,13 +122,18 @@ export default async function AdminSiswaPage({
   const hasPrevPage = page > 1
 
   const groupedMap = new Map<string, GroupedStudent>();
+  
   students.forEach((siswa) => {
     const key = siswa.nis ? siswa.nis : `${siswa.name}-${siswa.class}`;
     if (!groupedMap.has(key)) {
       groupedMap.set(key, {
         name: siswa.name,
         nis: siswa.nis,
+        nisn: siswa.nisn || null,
         class: siswa.class,
+        angkatan: siswa.angkatan || null,
+        jabatan_organisasi: siswa.jabatan_organisasi || null,
+        perkaderan_students: siswa.perkaderan_students || [],
         records: []
       });
     }
@@ -123,7 +147,7 @@ export default async function AdminSiswaPage({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Data Siswa</h1>
-          <p className="text-slate-600">Daftar seluruh siswa peserta ekstrakurikuler.</p>
+          <p className="text-slate-600">Daftar seluruh data induk kegiatan santri.</p>
         </div>
         <div className="flex gap-2">
           <ImportStudentButton />
@@ -156,7 +180,9 @@ export default async function AdminSiswaPage({
               <TableRow>
                 <TableHead className="w-[50px] text-center">No</TableHead>
                 <TableHead>Nama Siswa</TableHead>
-                <TableHead>Kelas / NIS</TableHead>
+                <TableHead>Kelas / Identitas</TableHead>
+                <TableHead>Jabatan</TableHead>
+                <TableHead>Perkaderan</TableHead>
                 <TableHead>Ekskul Aktif</TableHead>
                 <TableHead className="text-right pr-6">Aksi</TableHead>
               </TableRow>
@@ -168,6 +194,8 @@ export default async function AdminSiswaPage({
                     idx === self.findIndex((r) => r.excul?.id === record.excul?.id)
                   );
 
+                  const activePerkaderan = siswa.perkaderan_students.find(p => p.status === 'Aktif');
+
                   return (
                     <TableRow key={siswa.nis || index} className="hover:bg-slate-50/50 transition-colors">
                       <TableCell className="font-medium text-slate-500 text-center">
@@ -175,14 +203,40 @@ export default async function AdminSiswaPage({
                       </TableCell>
                       <TableCell>
                         <div className="font-bold text-slate-900">{siswa.name}</div>
+                        {siswa.angkatan && (
+                          <div className="text-[11px] text-slate-400 mt-0.5">Angkatan {siswa.angkatan}</div>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">
-                            {siswa.class}
-                          </Badge>
-                          {siswa.nis && <span className="text-xs text-slate-400">{siswa.nis}</span>}
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">
+                              {siswa.class}
+                            </Badge>
+                            {siswa.nis && <span className="text-xs text-slate-500">NIS: {siswa.nis}</span>}
+                          </div>
+                          {siswa.nisn && (
+                            <span className="text-[11px] text-slate-400 font-medium">NISN: {siswa.nisn}</span>
+                          )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {siswa.jabatan_organisasi ? (
+                          <span className="text-sm font-semibold text-slate-700 bg-slate-100 px-2 py-1 rounded-md border border-slate-200">
+                            {siswa.jabatan_organisasi}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">Santri</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {activePerkaderan?.perkaderan?.nama_jenjang ? (
+                          <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-none font-bold">
+                            {activePerkaderan.perkaderan.nama_jenjang}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">Belum Diplot</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1.5">
@@ -201,7 +255,7 @@ export default async function AdminSiswaPage({
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-48 text-center text-slate-500">
+                  <TableCell colSpan={7} className="h-48 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Users className="w-10 h-10 text-slate-200" />
                       <p className="font-medium">Data siswa tidak ditemukan.</p>

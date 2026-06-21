@@ -43,4 +43,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Attendance::class, 'recorder_id');
     }
+
+    public function perkaderans()
+{
+    return $this->belongsToMany(Perkaderan::class, 'perkaderan_user');
+}
 }

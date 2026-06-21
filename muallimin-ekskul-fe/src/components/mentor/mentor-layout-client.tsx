@@ -23,6 +23,8 @@ import { logoutAction } from "@/actions/authAction"
 type MentorUser = {
   name: string | null
   username: string | null
+  isMentorEkskul: boolean
+  isMentorPerkaderan: boolean
 }
 
 const MenuItem = ({ 
@@ -116,36 +118,67 @@ export default function MentorLayoutClient({
             isActive={isPathActive("/mentor/dashboard")}
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          
-          <MenuItem 
-            href="/mentor/presensi" 
-            icon={ClipboardList} 
-            label="Input Presensi" 
-            isActive={isPathActive("/mentor/presensi")}
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-          <MenuItem 
-            href="/mentor/penilaian" 
-            icon={GraduationCap} 
-            label="Penilaian" 
-            isActive={isPathActive("/mentor/penilaian")}
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
 
-          <MenuItem 
-            href="/mentor/riwayat" 
-            icon={History} 
-            label="Riwayat" 
-            isActive={isPathActive("/mentor/riwayat")}
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-          <MenuItem 
-            href="/mentor/rekap" 
-            icon={History} 
-            label="Rekapan Kehadiran" 
-            isActive={isPathActive("/mentor/rekap")}
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
+          {user.isMentorEkskul && (
+            <>
+              <p className="px-4 text-xs font-bold text-slate-400 uppercase mb-3 mt-6 tracking-wider">Modul Ekskul</p>
+              <MenuItem 
+                href="/mentor/presensi" 
+                icon={ClipboardList} 
+                label="Presensi Ekskul" 
+                isActive={isPathActive("/mentor/presensi")}
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              <MenuItem 
+                href="/mentor/penilaian" 
+                icon={GraduationCap} 
+                label="Penilaian Ekskul" 
+                isActive={isPathActive("/mentor/penilaian")}
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              <MenuItem 
+                href="/mentor/riwayat" 
+                icon={History} 
+                label="Riwayat Ekskul" 
+                isActive={isPathActive("/mentor/riwayat")}
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              <MenuItem 
+                href="/mentor/rekap" 
+                icon={History} 
+                label="Rekapan Kehadiran" 
+                isActive={isPathActive("/mentor/rekap")}
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+            </>
+          )}
+
+          {user.isMentorPerkaderan && (
+            <>
+              <p className="px-4 text-xs font-bold text-slate-400 uppercase mb-3 mt-6 tracking-wider">Modul Perkaderan</p>
+              <MenuItem 
+                href="/mentor/perkaderan/presensi" 
+                icon={ClipboardList} 
+                label="Presensi Perkaderan" 
+                isActive={isPathActive("/mentor/perkaderan/presensi")}
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              <MenuItem 
+                href="/mentor/perkaderan/penilaian" 
+                icon={GraduationCap} 
+                label="Penilaian Perkaderan" 
+                isActive={isPathActive("/mentor/perkaderan/penilaian")}
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              <MenuItem 
+                href="/mentor/perkaderan/riwayat" 
+                icon={History} 
+                label="Riwayat Perkaderan" 
+                isActive={isPathActive("/mentor/perkaderan/riwayat")}
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+            </>
+          )}
         </div>
 
         <div className="p-4 border-t border-slate-50 bg-slate-50/50 m-4 rounded-2xl shrink-0">

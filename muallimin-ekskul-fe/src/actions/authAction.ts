@@ -36,10 +36,24 @@ export async function loginAction(prevState: unknown, formData: FormData) {
     const role = result.data.user.role;
     const name = result.data.user.name;
     const uname = result.data.user.username;
+    const isMentorEkskul = result.data.user.is_mentor_ekskul;
+    const isMentorPerkaderan = result.data.user.is_mentor_perkaderan;
 
     const cookieStore = await cookies();
-    cookieStore.set("user_name", name, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/" });
-    cookieStore.set("user_username", uname, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/" });
+    const cookieOptions = { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === "production", 
+      sameSite: "lax" as const, 
+      path: "/" 
+    };
+
+    cookieStore.set("user_name", name, cookieOptions);
+    cookieStore.set("user_username", uname, cookieOptions);
+    
+    if (role === "MENTOR") {
+      cookieStore.set("is_mentor_ekskul", String(isMentorEkskul), cookieOptions);
+      cookieStore.set("is_mentor_perkaderan", String(isMentorPerkaderan), cookieOptions);
+    }
     
     await createSession(token, role);
 
@@ -83,6 +97,8 @@ export async function logoutAction() {
   const cookieStore = await cookies();
   cookieStore.delete("user_name");
   cookieStore.delete("user_username");
+  cookieStore.delete("is_mentor_ekskul");
+  cookieStore.delete("is_mentor_perkaderan");
   
   await logout(); 
 }

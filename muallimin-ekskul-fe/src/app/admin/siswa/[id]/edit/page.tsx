@@ -13,21 +13,31 @@ interface Excul {
   name: string;
 }
 
+interface Perkaderan {
+  id: number;
+  nama_jenjang: string;
+}
+
 interface Student {
   id: string;
   name: string;
   class: string;
   nis: string | null;
+  nisn: string | null;
+  jenis_kelamin: string | null;
+  angkatan: string | null;
+  jabatan_organisasi: string | null;
   exculId: string;
+  perkaderan_id?: number | null;
 }
 
-async function getStudentAndExculs(id: string): Promise<{ student: Student | null, exculs: Excul[] }> {
+async function getEditRequiredData(id: string): Promise<{ student: Student | null, exculs: Excul[], perkaderans: Perkaderan[] }> {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
     const token = await getToken();
-    if (!apiUrl || !token) return { student: null, exculs: [] };
+    if (!apiUrl || !token) return { student: null, exculs: [], perkaderans: [] };
 
-    const [studentRes, exculRes] = await Promise.all([
+    const [studentRes, exculRes, perkaderanRes] = await Promise.all([
       fetch(`${apiUrl}/admin/students/${id}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
         cache: 'no-store'
@@ -35,21 +45,31 @@ async function getStudentAndExculs(id: string): Promise<{ student: Student | nul
       fetch(`${apiUrl}/admin/exculs`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
         cache: 'no-store'
+      }),
+      fetch(`${apiUrl}/admin/perkaderans`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+        cache: 'no-store'
       })
     ]);
 
-    const studentData = studentRes.ok ? (await studentRes.json()).data : null;
+    const studentJson = studentRes.ok ? await studentRes.json() : null;
+    const studentData = studentJson ? studentJson.data : null;
     const exculData = exculRes.ok ? (await exculRes.json()).data : [];
+    const perkaderanData = perkaderanRes.ok ? (await perkaderanRes.json()).data : [];
 
-    return { student: studentData, exculs: exculData };
+    return { 
+      student: studentData, 
+      exculs: exculData, 
+      perkaderans: perkaderanData 
+    };
   } catch (e) {
-    return { student: null, exculs: [] };
+    return { student: null, exculs: [], perkaderans: [] };
   }
 }
 
 export default async function EditStudentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { student, exculs } = await getStudentAndExculs(id)
+  const { student, exculs, perkaderans } = await getEditRequiredData(id)
 
   if (!student) return notFound()
 
@@ -63,7 +83,7 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Edit Data Siswa</h1>
-          <p className="text-slate-500 text-sm">Perbarui informasi siswa.</p>
+          <p className="text-slate-500 text-sm">Perbarui informasi data induk, ekskul, dan perkaderan siswa.</p>
         </div>
       </div>
 
@@ -74,12 +94,12 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
               <UserCog className="w-5 h-5" />
             </div>
             <div>
-              <CardTitle className="text-base text-slate-800">Form Edit</CardTitle>
+              <CardTitle className="text-base text-slate-800">Form Edit Data Induk Terintegrasi</CardTitle>
             </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6">
-          <EditStudentForm student={student} exculs={exculs} />
+          <EditStudentForm student={student} exculs={exculs} perkaderans={perkaderans} />
         </CardContent>
       </Card>
     </div>

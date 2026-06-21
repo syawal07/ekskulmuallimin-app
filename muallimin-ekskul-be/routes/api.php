@@ -15,6 +15,7 @@ use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\AdminAssessmentController;
 use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\PerkaderanController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/landing', [LandingController::class, 'index']);
@@ -83,8 +84,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mentor/history', [AttendanceController::class, 'getHistory']);
     Route::get('/mentor/presensi-edit', [AttendanceController::class, 'getPresensiEdit']);
 
-    // Rute Khusus Wali Santri
+    Route::get('/admin/perkaderans', [PerkaderanController::class, 'index']);
+    Route::post('/admin/perkaderans', [PerkaderanController::class, 'store']);
+    Route::get('/admin/perkaderans/{id}', [PerkaderanController::class, 'show']);
+    Route::put('/admin/perkaderans/{id}', [PerkaderanController::class, 'update']);
+    Route::delete('/admin/perkaderans/{id}', [PerkaderanController::class, 'destroy']);
+
+// Rute Khusus Wali Santri
     Route::get('/wali/dashboard', [App\Http\Controllers\WaliController::class, 'dashboard']);
     Route::get('/wali/attendances', [App\Http\Controllers\WaliController::class, 'attendances']);
     Route::get('/wali/assessments', [App\Http\Controllers\WaliController::class, 'assessments']);
-});
+});    

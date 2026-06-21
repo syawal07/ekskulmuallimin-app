@@ -17,10 +17,14 @@ export default async function MentorLayout({
 
   const name = cookieStore.get("user_name")?.value || "Pengajar"
   const username = cookieStore.get("user_username")?.value || "mentor"
+  const isMentorEkskul = cookieStore.get("is_mentor_ekskul")?.value === "true"
+  const isMentorPerkaderan = cookieStore.get("is_mentor_perkaderan")?.value === "true"
 
   const user = {
     name: name,
-    username: username
+    username: username,
+    isMentorEkskul: isMentorEkskul,
+    isMentorPerkaderan: isMentorPerkaderan
   }
 
   return (

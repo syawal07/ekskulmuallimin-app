@@ -16,11 +16,11 @@ import {
   ClipboardCheck,
   ChevronRight,
   Image as ImageIcon,
+  GraduationCap,
   type LucideIcon,
   Loader2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-// Import Server Action Logout
 import { logoutAction } from "@/actions/authAction"
 
 type AdminUser = {
@@ -144,13 +144,19 @@ export default function AdminLayoutClient({
             onClick={() => setIsMobileMenuOpen(false)}
           />
           <MenuItem 
+            href="/admin/perkaderan" 
+            icon={GraduationCap} 
+            label="Data Perkaderan" 
+            isActive={isPathActive("/admin/perkaderan")}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <MenuItem 
             href="/admin/presensi" 
             icon={ClipboardCheck} 
             label="Monitoring Presensi" 
             isActive={isPathActive("/admin/presensi")}
             onClick={() => setIsMobileMenuOpen(false)}
           />
-
           <MenuItem 
             href="/admin/penilaian" 
             icon={ClipboardCheck} 
