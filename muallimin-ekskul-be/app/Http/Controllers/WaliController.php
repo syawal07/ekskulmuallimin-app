@@ -8,17 +8,7 @@ class WaliController extends Controller
 {
     public function dashboard(Request $request)
     {
-        $student = $request->user();
-
-        // Mencegah crash jika token tidak valid atau user null
-        if (!$student) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Sesi tidak valid atau tidak terautentikasi'
-            ], 401);
-        }
-
-        $student->load('excul');
+        $student = $request->user()->load('excul');
 
         return response()->json([
             'success' => true,
@@ -28,9 +18,6 @@ class WaliController extends Controller
                     'id' => $student->id,
                     'name' => $student->name,
                     'nis' => $student->nis,
-                    'nisn' => $student->nisn,
-                    'angkatan' => $student->angkatan,
-                    'foto' => $student->foto,
                     'class' => $student->class,
                     'is_active' => $student->is_active,
                 ],
@@ -44,21 +31,29 @@ class WaliController extends Controller
 
     public function attendances(Request $request)
     {
-        // KOSONGKAN DULU UNTUK FASE 4: Mencegah crash "undefined method attendances()"
+        $attendances = $request->user()
+            ->attendances()
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return response()->json([
             'success' => true,
             'message' => 'Data presensi berhasil diambil',
-            'data' => [] 
+            'data' => $attendances
         ], 200);
     }
 
     public function assessments(Request $request)
     {
-        // KOSONGKAN DULU UNTUK FASE 4: Mencegah crash "undefined method assessments()"
+        $assessments = $request->user()
+            ->assessments()
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return response()->json([
             'success' => true,
             'message' => 'Data penilaian berhasil diambil',
-            'data' => []
+            'data' => $assessments
         ], 200);
     }
 }

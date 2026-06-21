@@ -2,25 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable; 
-use Laravel\Sanctum\HasApiTokens; 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
 class Student extends Authenticatable
 {
-    use HasApiTokens, HasFactory; 
+    use HasApiTokens, HasUuids;
 
-    protected $fillable = [
-        'name',
-        'class',
-        'nis',
-        'nisn',
-        'jenis_kelamin',
-        'angkatan',
-        'jabatan_organisasi',
-        'is_active',
-        'foto',
-        'excul_id'
+    protected $fillable = ['name', 'nis', 'class', 'is_active', 'excul_id'];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     public function excul()
@@ -28,8 +21,13 @@ class Student extends Authenticatable
         return $this->belongsTo(Excul::class);
     }
 
-    public function perkaderanStudents()
+    public function attendances()
     {
-        return $this->hasMany(PerkaderanStudent::class, 'student_id');
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function assessments()
+    {
+        return $this->hasMany(Assessment::class);
     }
 }
