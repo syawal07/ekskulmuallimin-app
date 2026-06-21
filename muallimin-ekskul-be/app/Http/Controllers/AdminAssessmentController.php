@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Assessment;
 use App\Models\Excul;
+use App\Models\AcademicYear;
 use App\Exports\AssessmentReportExport;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -13,11 +14,16 @@ class AdminAssessmentController extends Controller
     public function index(Request $request)
     {
         $exculId = $request->query('excul_id');
+        $activeYear = AcademicYear::where('is_active', true)->first();
 
         $query = Assessment::with(['student', 'excul', 'mentor']);
 
         if ($exculId) {
             $query->where('excul_id', $exculId);
+        }
+        
+        if ($activeYear) {
+            $query->where('academic_year_id', $activeYear->id);
         }
 
         $assessments = $query->get()->sortBy('student.name')->values();

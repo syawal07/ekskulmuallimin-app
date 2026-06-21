@@ -11,6 +11,8 @@ return new class extends Migration
         Schema::create('perkaderans', function (Blueprint $table) {
             $table->id();
             $table->string('nama_jenjang');
+            $table->enum('kategori', ['Wajib', 'Pendukung Utama', 'Pendukung Khusus'])->default('Wajib');
+            $table->string('target_kelas')->nullable();
             $table->text('deskripsi')->nullable();
             $table->timestamps();
         });

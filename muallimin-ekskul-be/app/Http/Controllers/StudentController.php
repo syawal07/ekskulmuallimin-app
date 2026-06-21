@@ -6,22 +6,37 @@ use App\Models\Student;
 use App\Models\Excul;
 use App\Models\Perkaderan;
 use App\Models\PerkaderanStudent;
+use App\Models\AcademicYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Student::with(['excul', 'perkaderanStudents.perkaderan']);
+        $activeYear = AcademicYear::where('is_active', true)->first();
+        
+        $query = Student::with(['exculs' => function($q) use ($activeYear) {
+            if ($activeYear) {
+                $q->where('excul_student.academic_year_id', $activeYear->id);
+            }
+        }, 'perkaderans.perkaderan']);
 
         if ($request->has('q') && $request->q != '') {
-            $query->where('name', 'like', '%' . $request->q . '%')
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->q . '%')
                   ->orWhere('nis', 'like', '%' . $request->q . '%');
+            });
         }
 
         if ($request->has('exculId') && $request->exculId != '') {
-            $query->where('excul_id', $request->exculId);
+            $query->whereHas('exculs', function ($q) use ($request, $activeYear) {
+                $q->where('exculs.id', $request->exculId);
+                if ($activeYear) {
+                    $q->where('excul_student.academic_year_id', $activeYear->id);
+                }
+            });
         }
 
         if ($request->has('status_aktif') && $request->status_aktif != '') {
@@ -38,7 +53,17 @@ class StudentController extends Controller
 
     public function show($id)
     {
-        $student = Student::with(['excul', 'perkaderanStudents.perkaderan'])->find($id);
+        $activeYear = AcademicYear::where('is_active', true)->first();
+
+        $student = Student::with(['exculs' => function($q) use ($activeYear) {
+            if ($activeYear) {
+                $q->where('excul_student.academic_year_id', $activeYear->id);
+            }
+        }, 'perkaderans' => function($q) use ($activeYear) {
+            if ($activeYear) {
+                $q->where('tahun_ajaran', $activeYear->name);
+            }
+        }, 'perkaderans.perkaderan'])->find($id);
 
         if (!$student) {
             return response()->json([
@@ -47,8 +72,9 @@ class StudentController extends Controller
             ], 404);
         }
 
-        $activePerkaderan = $student->perkaderanStudents->where('status', 'Aktif')->first();
-        $student->perkaderan_id = $activePerkaderan ? $activePerkaderan->perkaderan_id : null;
+        $activePerkaderans = $student->perkaderans->where('status', 'Aktif');
+        $student->perkaderan_ids = $activePerkaderans->pluck('perkaderan_id')->toArray();
+        $student->jabatan_perkaderan = $activePerkaderans->first() ? $activePerkaderans->first()->jabatan : null;
 
         return response()->json([
             'success' => true,
@@ -61,56 +87,75 @@ class StudentController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'class' => 'required|string|max:50',
-            'excul_id' => 'required|exists:exculs,id',
+            'excul_id' => 'required|array',
+            'excul_id.*' => 'exists:exculs,id',
             'nis' => 'nullable|string',
             'nisn' => 'nullable|string',
             'jenis_kelamin' => 'nullable|in:L,P',
             'angkatan' => 'nullable|string',
             'jabatan_organisasi' => 'nullable|string',
-            'perkaderan_id' => 'nullable|exists:perkaderans,id',
+            'perkaderan_ids' => 'nullable|array',
+            'perkaderan_ids.*' => 'exists:perkaderans,id',
+            'jabatan_perkaderan' => 'nullable|string',
             'is_active' => 'nullable|boolean',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
-        $fotoName = null;
-        if ($request->hasFile('foto')) {
-            $foto = $request->file('foto');
-            $fotoName = time() . '_' . $foto->getClientOriginalName();
-            $foto->move(public_path('uploads/students'), $fotoName);
+        $activeYear = AcademicYear::where('is_active', true)->first();
+        if (!$activeYear) {
+            return response()->json(['success' => false, 'message' => 'Tahun Pelajaran Aktif belum diatur oleh sistem.'], 400);
         }
 
-        $student = Student::create([
-            'name' => $request->name,
-            'class' => $request->class,
-            'nis' => $request->nis,
-            'nisn' => $request->nisn,
-            'jenis_kelamin' => $request->jenis_kelamin,
-            'angkatan' => $request->angkatan,
-            'jabatan_organisasi' => $request->jabatan_organisasi,
-            'is_active' => $request->has('is_active') ? $request->is_active : true,
-            'foto' => $fotoName,
-            'excul_id' => $request->excul_id
-        ]);
+        DB::beginTransaction();
+        try {
+            $fotoName = null;
+            if ($request->hasFile('foto')) {
+                $foto = $request->file('foto');
+                $fotoName = time() . '_' . $foto->getClientOriginalName();
+                $foto->move(public_path('uploads/students'), $fotoName);
+            }
 
-        if ($request->has('perkaderan_id') && $request->perkaderan_id != null) {
-            $currentMonth = (int) date('m');
-            $currentYear = (int) date('Y');
-            $tahunAjaran = ($currentMonth >= 7) ? $currentYear . '/' . ($currentYear + 1) : ($currentYear - 1) . '/' . $currentYear;
-            $semester = ($currentMonth >= 7) ? 'Ganjil' : 'Genap';
-
-            PerkaderanStudent::create([
-                'student_id' => $student->id,
-                'perkaderan_id' => $request->perkaderan_id,
-                'tahun_ajaran' => $tahunAjaran,
-                'semester' => $semester,
-                'status' => 'Aktif'
+            $student = Student::create([
+                'name' => $request->name,
+                'class' => $request->class,
+                'nis' => $request->nis,
+                'nisn' => $request->nisn,
+                'jenis_kelamin' => $request->jenis_kelamin,
+                'angkatan' => $request->angkatan,
+                'jabatan_organisasi' => $request->jabatan_organisasi,
+                'is_active' => $request->has('is_active') ? $request->is_active : true,
+                'foto' => $fotoName,
             ]);
-        }
 
-        return response()->json([
-            'success' => true,
-            'data' => $student
-        ], 201);
+            $syncData = [];
+            foreach ($request->excul_id as $exculId) {
+                $syncData[$exculId] = ['academic_year_id' => $activeYear->id, 'is_active' => true];
+            }
+            $student->exculs()->attach($syncData);
+
+            if ($request->has('perkaderan_ids') && is_array($request->perkaderan_ids) && count($request->perkaderan_ids) > 0) {
+                $pkData = [];
+                foreach ($request->perkaderan_ids as $pkId) {
+                    $pkData[] = [
+                        'student_id' => $student->id,
+                        'perkaderan_id' => $pkId,
+                        'tahun_ajaran' => $activeYear->name,
+                        'semester' => $activeYear->semester,
+                        'status' => 'Aktif',
+                        'jabatan' => $request->jabatan_perkaderan ?? 'Peserta',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+                PerkaderanStudent::insert($pkData);
+            }
+
+            DB::commit();
+            return response()->json(['success' => true, 'data' => $student], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem.'], 500);
+        }
     }
 
     public function update(Request $request, $id)
@@ -118,13 +163,16 @@ class StudentController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'class' => 'required|string|max:50',
-            'excul_id' => 'required|exists:exculs,id',
+            'excul_id' => 'required|array',
+            'excul_id.*' => 'exists:exculs,id',
             'nis' => 'nullable|string',
             'nisn' => 'nullable|string',
             'jenis_kelamin' => 'nullable|in:L,P',
             'angkatan' => 'nullable|string',
             'jabatan_organisasi' => 'nullable|string',
-            'perkaderan_id' => 'nullable|exists:perkaderans,id',
+            'perkaderan_ids' => 'nullable|array',
+            'perkaderan_ids.*' => 'exists:perkaderans,id',
+            'jabatan_perkaderan' => 'nullable|string',
             'is_active' => 'nullable|boolean',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
@@ -132,64 +180,96 @@ class StudentController extends Controller
         $student = Student::find($id);
 
         if (!$student) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Siswa tidak ditemukan'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Siswa tidak ditemukan'], 404);
         }
 
-        $fotoName = $student->foto;
-        if ($request->hasFile('foto')) {
-            if ($fotoName && File::exists(public_path('uploads/students/' . $fotoName))) {
-                File::delete(public_path('uploads/students/' . $fotoName));
-            }
-            $foto = $request->file('foto');
-            $fotoName = time() . '_' . $foto->getClientOriginalName();
-            $foto->move(public_path('uploads/students'), $fotoName);
+        $activeYear = AcademicYear::where('is_active', true)->first();
+        if (!$activeYear) {
+            return response()->json(['success' => false, 'message' => 'Tahun Pelajaran Aktif belum diatur.'], 400);
         }
 
-        $student->update([
-            'name' => $request->name,
-            'class' => $request->class,
-            'nis' => $request->nis,
-            'nisn' => $request->nisn,
-            'jenis_kelamin' => $request->jenis_kelamin,
-            'angkatan' => $request->angkatan,
-            'jabatan_organisasi' => $request->jabatan_organisasi,
-            'is_active' => $request->has('is_active') ? $request->is_active : $student->is_active,
-            'foto' => $fotoName,
-            'excul_id' => $request->excul_id
-        ]);
-
-        if ($request->has('perkaderan_id') && $request->perkaderan_id != null) {
-            $currentMonth = (int) date('m');
-            $currentYear = (int) date('Y');
-            $tahunAjaran = ($currentMonth >= 7) ? $currentYear . '/' . ($currentYear + 1) : ($currentYear - 1) . '/' . $currentYear;
-            $semester = ($currentMonth >= 7) ? 'Ganjil' : 'Genap';
-            
-            $activePerkaderan = PerkaderanStudent::where('student_id', $student->id)
-                                                 ->where('status', 'Aktif')
-                                                 ->first();
-
-            if ($activePerkaderan && $activePerkaderan->perkaderan_id != $request->perkaderan_id) {
-                $activePerkaderan->update(['status' => 'Lulus/Pindah']);
+        DB::beginTransaction();
+        try {
+            $fotoName = $student->foto;
+            if ($request->hasFile('foto')) {
+                if ($fotoName && File::exists(public_path('uploads/students/' . $fotoName))) {
+                    File::delete(public_path('uploads/students/' . $fotoName));
+                }
+                $foto = $request->file('foto');
+                $fotoName = time() . '_' . $foto->getClientOriginalName();
+                $foto->move(public_path('uploads/students'), $fotoName);
             }
 
-            if (!$activePerkaderan || $activePerkaderan->perkaderan_id != $request->perkaderan_id) {
-                PerkaderanStudent::create([
-                    'student_id' => $student->id,
-                    'perkaderan_id' => $request->perkaderan_id,
-                    'tahun_ajaran' => $tahunAjaran,
-                    'semester' => $semester,
-                    'status' => 'Aktif'
-                ]);
+            $student->update([
+                'name' => $request->name,
+                'class' => $request->class,
+                'nis' => $request->nis,
+                'nisn' => $request->nisn,
+                'jenis_kelamin' => $request->jenis_kelamin,
+                'angkatan' => $request->angkatan,
+                'jabatan_organisasi' => $request->jabatan_organisasi,
+                'is_active' => $request->has('is_active') ? $request->is_active : $student->is_active,
+                'foto' => $fotoName,
+            ]);
+
+            $syncData = [];
+            foreach ($request->excul_id as $exculId) {
+                $syncData[$exculId] = ['academic_year_id' => $activeYear->id, 'is_active' => true];
             }
+            $student->exculs()->wherePivot('academic_year_id', $activeYear->id)->sync($syncData);
+
+            if ($request->has('perkaderan_ids') && is_array($request->perkaderan_ids)) {
+                
+                PerkaderanStudent::where('student_id', $student->id)
+                    ->where('tahun_ajaran', $activeYear->name)
+                    ->whereNotIn('perkaderan_id', $request->perkaderan_ids)
+                    ->update(['status' => 'Pindah']);
+
+                $existingPk = PerkaderanStudent::where('student_id', $student->id)
+                    ->where('tahun_ajaran', $activeYear->name)
+                    ->pluck('perkaderan_id')
+                    ->toArray();
+
+                $newPkData = [];
+                foreach ($request->perkaderan_ids as $pkId) {
+                    if (!in_array($pkId, $existingPk)) {
+                        $newPkData[] = [
+                            'student_id' => $student->id,
+                            'perkaderan_id' => $pkId,
+                            'tahun_ajaran' => $activeYear->name,
+                            'semester' => $activeYear->semester,
+                            'status' => 'Aktif',
+                            'jabatan' => $request->jabatan_perkaderan ?? 'Peserta',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    } else {
+                        PerkaderanStudent::where('student_id', $student->id)
+                            ->where('perkaderan_id', $pkId)
+                            ->where('tahun_ajaran', $activeYear->name)
+                            ->update([
+                                'status' => 'Aktif',
+                                'jabatan' => $request->jabatan_perkaderan ?? 'Peserta'
+                            ]);
+                    }
+                }
+
+                if (count($newPkData) > 0) {
+                    PerkaderanStudent::insert($newPkData);
+                }
+
+            } else {
+                PerkaderanStudent::where('student_id', $student->id)
+                    ->where('tahun_ajaran', $activeYear->name)
+                    ->update(['status' => 'Pindah']);
+            }
+
+            DB::commit();
+            return response()->json(['success' => true, 'data' => $student], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui data'], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => $student
-        ], 200);
     }
 
     public function destroy($id)
@@ -197,18 +277,7 @@ class StudentController extends Controller
         $student = Student::find($id);
 
         if (!$student) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Siswa tidak ditemukan'
-            ], 404);
-        }
-
-        if (method_exists($student, 'perkaderanStudents')) {
-            $student->perkaderanStudents()->delete();
-        }
-
-        if (method_exists($student, 'attendances')) {
-            $student->attendances()->delete();
+            return response()->json(['success' => false, 'message' => 'Siswa tidak ditemukan'], 404);
         }
 
         if ($student->foto && File::exists(public_path('uploads/students/' . $student->foto))) {
@@ -229,97 +298,90 @@ class StudentController extends Controller
             'students' => 'required|array'
         ]);
 
+        $activeYear = AcademicYear::where('is_active', true)->first();
+        if (!$activeYear) {
+            return response()->json(['success' => false, 'message' => 'Tahun Pelajaran belum diatur.'], 400);
+        }
+
         $studentsData = $request->students;
         $insertedCount = 0;
 
         $allExculs = Excul::all();
         $allPerkaderans = Perkaderan::all();
         
-        $currentMonth = (int) date('m');
-        $currentYear = (int) date('Y');
-        $tahunAjaran = ($currentMonth >= 7) ? $currentYear . '/' . ($currentYear + 1) : ($currentYear - 1) . '/' . $currentYear;
-        $semester = ($currentMonth >= 7) ? 'Ganjil' : 'Genap';
+        DB::beginTransaction();
+        try {
+            foreach ($studentsData as $data) {
+                if (empty($data['name']) || empty($data['class']) || empty($data['exculName'])) {
+                    continue;
+                }
 
-        foreach ($studentsData as $data) {
-            if (empty($data['name']) || empty($data['class']) || empty($data['exculName'])) {
-                continue;
-            }
+                $exculNamesArray = array_map('trim', explode(',', $data['exculName']));
+                $perkaderanNamesArray = isset($data['perkaderanName']) && $data['perkaderanName'] != '' ? array_map('trim', explode(',', $data['perkaderanName'])) : [];
 
-            $exculNamesArray = array_map('trim', explode(',', $data['exculName']));
-            
-            $perkaderanName = isset($data['perkaderanName']) ? trim($data['perkaderanName']) : null;
-            $perkaderan = $perkaderanName ? $allPerkaderans->first(function($item) use ($perkaderanName) {
-                return strtolower(trim($item->nama_jenjang)) === strtolower($perkaderanName);
-            }) : null;
+                $student = Student::create([
+                    'name' => $data['name'],
+                    'class' => $data['class'],
+                    'nis' => $data['nis'] ?? null,
+                    'nisn' => $data['nisn'] ?? null,
+                    'jenis_kelamin' => $data['jenis_kelamin'] ?? null,
+                    'angkatan' => $data['angkatan'] ?? null,
+                    'jabatan_organisasi' => $data['jabatan_organisasi'] ?? null,
+                    'is_active' => true
+                ]);
 
-            foreach ($exculNamesArray as $exName) {
-                $excul = $allExculs->first(function($item) use ($exName) {
-                    return strtolower(trim($item->name)) === strtolower($exName);
-                });
+                $syncData = [];
+                foreach ($exculNamesArray as $exName) {
+                    $excul = $allExculs->first(function($item) use ($exName) {
+                        return strtolower(trim($item->name)) === strtolower($exName);
+                    });
+                    if ($excul) {
+                        $syncData[$excul->id] = ['academic_year_id' => $activeYear->id, 'is_active' => true];
+                    }
+                }
+                
+                if (count($syncData) > 0) {
+                    $student->exculs()->attach($syncData);
+                }
 
-                if ($excul) {
-                    $student = Student::create([
-                        'name' => $data['name'],
-                        'class' => $data['class'],
-                        'nis' => $data['nis'] ?? null,
-                        'nisn' => $data['nisn'] ?? null,
-                        'jenis_kelamin' => $data['jenis_kelamin'] ?? null,
-                        'angkatan' => $data['angkatan'] ?? null,
-                        'jabatan_organisasi' => $data['jabatan_organisasi'] ?? null,
-                        'excul_id' => $excul->id,
-                        'is_active' => true
-                    ]);
+                if (count($perkaderanNamesArray) > 0) {
+                    $pkInsertData = [];
+                    foreach($perkaderanNamesArray as $pkName) {
+                        $pk = $allPerkaderans->first(function($item) use ($pkName) {
+                            return strtolower(trim($item->nama_jenjang)) === strtolower($pkName);
+                        });
 
-                    if ($perkaderan) {
-                        PerkaderanStudent::create([
-                            'student_id' => $student->id,
-                            'perkaderan_id' => $perkaderan->id,
-                            'tahun_ajaran' => $tahunAjaran,
-                            'semester' => $semester,
-                            'status' => 'Aktif'
-                        ]);
+                        if($pk) {
+                            $pkInsertData[] = [
+                                'student_id' => $student->id,
+                                'perkaderan_id' => $pk->id,
+                                'tahun_ajaran' => $activeYear->name,
+                                'semester' => $activeYear->semester,
+                                'status' => 'Aktif',
+                                'jabatan' => $data['jabatan_perkaderan'] ?? 'Peserta',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ];
+                        }
                     }
 
-                    $insertedCount++;
+                    if (count($pkInsertData) > 0) {
+                        PerkaderanStudent::insert($pkInsertData);
+                    }
                 }
-            }
-        }
 
-        if ($insertedCount === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal import. Pastikan penulisan nama ekskul sesuai sistem.'
-            ], 400);
+                $insertedCount++;
+            }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal import: ' . $e->getMessage()], 500);
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Berhasil import siswa',
-            'data' => [
-                'count' => $insertedCount
-            ]
-        ], 201);
-    }
-
-    public function storeByMentor(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'class' => 'required|string|max:50',
-            'excul_id' => 'required|exists:exculs,id'
-        ]);
-
-        $student = Student::create([
-            'name' => $request->name,
-            'class' => $request->class,
-            'nis' => $request->nis,
-            'excul_id' => $request->excul_id,
-            'is_active' => true
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'data' => $student
+            'data' => ['count' => $insertedCount]
         ], 201);
     }
 }

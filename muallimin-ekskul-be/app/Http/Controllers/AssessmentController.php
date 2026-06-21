@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Exports\AssessmentTemplateExport;
 use App\Imports\AssessmentImport;
+use App\Models\Assessment;
+use App\Models\Student;
+use App\Models\AcademicYear;
 use Maatwebsite\Excel\Facades\Excel;
-use Carbon\Carbon;
 
 class AssessmentController extends Controller
 {
@@ -19,47 +21,41 @@ class AssessmentController extends Controller
         }
 
         $fileName = 'Template_Nilai_Ekskul_' . time() . '.xlsx';
-        
         return Excel::download(new AssessmentTemplateExport($exculId), $fileName);
     }
 
-   public function importExcel(Request $request)
+    public function importExcel(Request $request)
     {
         $request->validate([
             'excul_id' => 'required|uuid',
             'file' => 'required|mimes:xlsx,xls'
         ]);
 
-        $academicYear = $this->getCurrentAcademicYear();
+        $activeYear = AcademicYear::where('is_active', true)->first();
+        if (!$activeYear) {
+            return response()->json(['success' => false, 'message' => 'Tahun Pelajaran belum diatur'], 400);
+        }
 
-        $import = new AssessmentImport($request->excul_id, $request->user()->id, $academicYear);
+        $import = new AssessmentImport($request->excul_id, $request->user()->id, $activeYear->id);
         Excel::import($import, $request->file('file'));
 
         return response()->json([
             'success' => true,
-            // INOVASI: Mengembalikan laporan statistik
             'message' => "Berhasil! {$import->updated} nilai diperbarui, {$import->inserted} siswa baru ditambahkan, dan {$import->failed} baris dilewati."
         ], 200);
     }
 
-    private function getCurrentAcademicYear()
-    {
-        $now = Carbon::now();
-        $year = $now->year;
-
-        if ($now->month >= 7) {
-            return $year . '/' . ($year + 1);
-        }
-
-        return ($year - 1) . '/' . $year;
-    }
-
-   public function index(Request $request)
+    public function index(Request $request)
     {
         $exculId = $request->query('excul_id');
+        $activeYear = AcademicYear::where('is_active', true)->first();
         
-        $query = \App\Models\Assessment::with('student')
+        $query = Assessment::with('student')
             ->where('mentor_id', $request->user()->id);
+
+        if ($activeYear) {
+            $query->where('academic_year_id', $activeYear->id);
+        }
 
         if ($exculId) {
             $query->where('excul_id', $exculId);
@@ -67,15 +63,20 @@ class AssessmentController extends Controller
 
         $assessments = $query->get()->sortBy('student.name')->values();
 
-        // INOVASI: Deteksi Siswa Tertinggal (Belum Dinilai)
-        $missingQuery = \App\Models\Student::where('is_active', true);
-        if ($exculId) {
-            $missingQuery->where('excul_id', $exculId);
+        // INOVASI: Optimasi Database Engine (Lebih Ringan dari WHERE NOT IN PHP)
+        $missingQuery = Student::where('is_active', true);
+        
+        if ($exculId && $activeYear) {
+            $missingQuery->whereHas('exculs', function($q) use ($exculId, $activeYear) {
+                $q->where('excul_student.excul_id', $exculId)
+                  ->where('excul_student.academic_year_id', $activeYear->id);
+            })->whereDoesntHave('assessments', function($q) use ($exculId, $activeYear) {
+                $q->where('excul_id', $exculId)
+                  ->where('academic_year_id', $activeYear->id);
+            });
         }
-        $assessedStudentIds = $assessments->pluck('student_id')->toArray();
-        $missingStudents = $missingQuery->whereNotIn('id', $assessedStudentIds)
-            ->orderBy('name')
-            ->get(['id', 'name', 'class']); // Ambil field yang diperlukan saja
+
+        $missingStudents = $missingQuery->orderBy('name')->get(['id', 'name', 'class']);
 
         return response()->json([
             'success' => true,
@@ -86,16 +87,15 @@ class AssessmentController extends Controller
         ], 200);
     }
 
-    // Edit Nilai Satuan
     public function update(Request $request, $id)
     {
         $request->validate(['score' => 'required|integer|min:0|max:100']);
         
-        $assessment = \App\Models\Assessment::where('id', $id)
+        $assessment = Assessment::where('id', $id)
             ->where('mentor_id', $request->user()->id)
             ->firstOrFail();
 
-        $details = \App\Models\Assessment::calculateGradeDetails($request->score);
+        $details = Assessment::calculateGradeDetails($request->score);
 
         $assessment->update([
             'score' => $request->score,
@@ -107,10 +107,9 @@ class AssessmentController extends Controller
         return response()->json(['success' => true, 'message' => 'Nilai berhasil diperbarui']);
     }
 
-    // Hapus Nilai Satuan
     public function destroy(Request $request, $id)
     {
-        $assessment = \App\Models\Assessment::where('id', $id)
+        $assessment = Assessment::where('id', $id)
             ->where('mentor_id', $request->user()->id)
             ->firstOrFail();
             
@@ -118,5 +117,4 @@ class AssessmentController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Data nilai dihapus']);
     }
-    
 }

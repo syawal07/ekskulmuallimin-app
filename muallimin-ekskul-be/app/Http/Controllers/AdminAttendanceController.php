@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use App\Models\Student;
+use App\Models\AcademicYear;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,18 +20,13 @@ class AdminAttendanceController extends Controller
         $perPage = 15;
 
         if (!$date || !$exculId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tanggal dan Ekskul wajib diisi'
-            ], 400);
+            return response()->json(['success' => false, 'message' => 'Tanggal dan Ekskul wajib diisi'], 400);
         }
 
-        $attendances = Attendance::select('attendances.*')
-            ->join('students', 'attendances.student_id', '=', 'students.id')
-            ->with('student')
-            ->where('students.excul_id', $exculId)
-            ->whereDate('attendances.date', Carbon::parse($date)->toDateString())
-            ->orderBy('students.name', 'asc')
+        $attendances = Attendance::with('student')
+            ->where('excul_id', $exculId)
+            ->whereDate('date', Carbon::parse($date)->toDateString())
+            ->whereHas('student')
             ->paginate($perPage);
 
         $formattedData = $attendances->map(function ($att) {
@@ -68,7 +64,6 @@ class AdminAttendanceController extends Controller
         }
 
         $fileName = 'Rekap_Presensi_' . Carbon::parse($date)->format('d-m-Y') . '.xlsx';
-        
         return Excel::download(new AttendanceExport($date, $exculId), $fileName);
     }
 
@@ -83,21 +78,27 @@ class AdminAttendanceController extends Controller
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
         $exculId = $request->query('excul_id');
-        $perPage = 15; // Batasi 15 siswa per halaman
+        $activeYear = AcademicYear::where('is_active', true)->first();
 
-        // Paginasi query students
-        $students = Student::where('excul_id', $exculId)
+        $students = Student::whereHas('exculs', function($q) use ($exculId, $activeYear) {
+                $q->where('excul_student.excul_id', $exculId);
+                if ($activeYear) {
+                    $q->where('excul_student.academic_year_id', $activeYear->id);
+                }
+            })
+            ->with(['attendances' => function($q) use ($startDate, $endDate, $exculId) {
+                $q->where('excul_id', $exculId)
+                  ->whereBetween('date', [$startDate, $endDate]);
+            }])
             ->where('is_active', true)
             ->orderBy('class')
             ->orderBy('name')
-            ->paginate($perPage);
+            ->paginate(15);
 
         $recapData = [];
 
         foreach ($students as $student) {
-            $attendances = Attendance::where('student_id', $student->id)
-                ->whereBetween('date', [$startDate, $endDate])
-                ->get();
+            $attendances = $student->attendances;
 
             $hadir = $attendances->where('status', 'HADIR')->count();
             $izin = $attendances->where('status', 'IZIN')->count();
@@ -127,7 +128,6 @@ class AdminAttendanceController extends Controller
             ];
         }
 
-        // Kembalikan beserta meta paginasi
         return response()->json([
             'success' => true,
             'message' => 'Data rekap berhasil diambil',
@@ -145,11 +145,9 @@ class AdminAttendanceController extends Controller
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
         $exculId = $request->query('excul_id');
-        $perPage = 10; 
 
         $query = Attendance::query()
-            ->join('students', 'attendances.student_id', '=', 'students.id')
-            ->join('exculs', 'students.excul_id', '=', 'exculs.id')
+            ->join('exculs', 'attendances.excul_id', '=', 'exculs.id')
             ->leftJoin('users as recorders', 'attendances.recorder_id', '=', 'recorders.id')
             ->whereBetween('attendances.date', [$startDate, $endDate])
             ->select(
@@ -162,13 +160,10 @@ class AdminAttendanceController extends Controller
             ->groupBy('session_date', 'exculs.id', 'exculs.name');
 
         if ($exculId && $exculId !== 'all') {
-            $query->where('students.excul_id', $exculId);
+            $query->where('attendances.excul_id', $exculId);
         }
 
-        $query->orderBy('session_date', 'desc')->orderBy('excul_name', 'asc');
-
-        $paginatedSessions = $query->paginate($perPage);
-
+        $paginatedSessions = $query->orderBy('session_date', 'desc')->paginate(10);
         $sessionsData = [];
 
         foreach ($paginatedSessions as $sessionGroup) {
@@ -178,9 +173,7 @@ class AdminAttendanceController extends Controller
 
             $studentAttendances = Attendance::with('student')
                 ->whereDate('date', $dateStr)
-                ->whereHas('student', function ($q) use ($currentExculId) {
-                    $q->where('excul_id', $currentExculId);
-                })
+                ->where('excul_id', $currentExculId)
                 ->get();
 
             $stats = ['HADIR' => 0, 'IZIN' => 0, 'SAKIT' => 0, 'ALPHA' => 0];
@@ -190,12 +183,14 @@ class AdminAttendanceController extends Controller
                 if (isset($stats[$att->status])) {
                     $stats[$att->status]++;
                 }
-                $studentsData[] = [
-                    'name' => $att->student->name,
-                    'class' => $att->student->class,
-                    'status' => $att->status,
-                    'notes' => $att->notes
-                ];
+                if ($att->student) {
+                    $studentsData[] = [
+                        'name' => $att->student->name,
+                        'class' => $att->student->class,
+                        'status' => $att->status,
+                        'notes' => $att->notes
+                    ];
+                }
             }
 
             $sessionsData[] = [

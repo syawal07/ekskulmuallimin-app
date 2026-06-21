@@ -10,15 +10,17 @@ class Student extends Authenticatable
 {
     use HasApiTokens, HasUuids;
 
-    protected $fillable = ['name', 'nis', 'class', 'is_active', 'excul_id'];
+    protected $fillable = ['name', 'nis', 'class', 'is_active'];
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
 
-    public function excul()
+    public function exculs()
     {
-        return $this->belongsTo(Excul::class);
+        return $this->belongsToMany(Excul::class, 'excul_student')
+                    ->withPivot('academic_year_id', 'is_active')
+                    ->withTimestamps();
     }
 
     public function attendances()
@@ -29,5 +31,15 @@ class Student extends Authenticatable
     public function assessments()
     {
         return $this->hasMany(Assessment::class);
+    }
+
+    public function perkaderans()
+    {
+        return $this->hasMany(PerkaderanStudent::class, 'student_id');
+    }
+
+    public function achievements()
+    {
+        return $this->hasMany(Achievement::class);
     }
 }

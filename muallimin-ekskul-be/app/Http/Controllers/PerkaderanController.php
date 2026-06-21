@@ -7,9 +7,22 @@ use Illuminate\Http\Request;
 
 class PerkaderanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $perkaderans = Perkaderan::orderBy('id', 'asc')->get();
+        $query = Perkaderan::query();
+
+        if ($request->has('kategori') && $request->kategori != '') {
+            $query->where('kategori', $request->kategori);
+        }
+
+        if ($request->has('target_kelas') && $request->target_kelas != '') {
+            $query->where('target_kelas', $request->target_kelas);
+        }
+
+        $perkaderans = $query->orderBy('target_kelas', 'asc')
+                             ->orderBy('kategori', 'asc')
+                             ->orderBy('id', 'asc')
+                             ->get();
 
         return response()->json([
             'success' => true,
@@ -38,11 +51,15 @@ class PerkaderanController extends Controller
     {
         $request->validate([
             'nama_jenjang' => 'required|string|max:255',
+            'kategori' => 'required|in:Wajib,Pendukung Utama,Pendukung Khusus',
+            'target_kelas' => 'nullable|string|max:50',
             'deskripsi' => 'nullable|string'
         ]);
 
         $perkaderan = Perkaderan::create([
             'nama_jenjang' => $request->nama_jenjang,
+            'kategori' => $request->kategori,
+            'target_kelas' => $request->target_kelas,
             'deskripsi' => $request->deskripsi
         ]);
 
@@ -56,6 +73,8 @@ class PerkaderanController extends Controller
     {
         $request->validate([
             'nama_jenjang' => 'required|string|max:255',
+            'kategori' => 'required|in:Wajib,Pendukung Utama,Pendukung Khusus',
+            'target_kelas' => 'nullable|string|max:50',
             'deskripsi' => 'nullable|string'
         ]);
 
@@ -70,6 +89,8 @@ class PerkaderanController extends Controller
 
         $perkaderan->update([
             'nama_jenjang' => $request->nama_jenjang,
+            'kategori' => $request->kategori,
+            'target_kelas' => $request->target_kelas,
             'deskripsi' => $request->deskripsi
         ]);
 

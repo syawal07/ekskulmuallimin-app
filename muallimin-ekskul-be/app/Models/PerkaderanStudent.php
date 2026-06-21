@@ -11,7 +11,8 @@ class PerkaderanStudent extends Model
         'perkaderan_id',
         'tahun_ajaran',
         'semester',
-        'status'
+        'status',
+        'jabatan'
     ];
 
     public function student()

@@ -8,6 +8,8 @@ class Perkaderan extends Model
 {
     protected $fillable = [
         'nama_jenjang',
+        'kategori',
+        'target_kelas',
         'deskripsi'
     ];
 
