@@ -1,46 +1,58 @@
-import SchoolProfileForm from "@/components/admin/school-profile-form"
 import { cookies } from "next/headers"
+import SchoolProfileForm from "@/components/admin/school-profile-form"
+import { AcademicYearForm } from "@/components/admin/academic-year-form"
+import { AcademicYearTable } from "@/components/admin/academic-year-table"
 
-// Pastikan halaman ini selalu mengambil data terbaru (tidak di-cache statis)
-export const dynamic = "force-dynamic"
+async function getData() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get("session_token")?.value
+  const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL
 
-async function getCompanyProfile() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session_token")?.value;
-  const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+  const [resProfile, resYears] = await Promise.all([
+    fetch(`${apiUrl}/admin/company-profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }),
+    fetch(`${apiUrl}/academic-years`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }),
+  ])
 
-  if (!token || !apiUrl) return {};
+  const profileData = resProfile.ok ? await resProfile.json() : { data: null }
+  const yearsData = resYears.ok ? await resYears.json() : { data: [] }
 
-  try {
-    const res = await fetch(`${apiUrl}/admin/company-profile`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json'
-      },
-      cache: 'no-store'
-    });
-
-    if (!res.ok) return {};
-    const result = await res.json();
-    return result.data || {};
-  } catch (e) {
-    return {};
+  return {
+    profile: profileData.data,
+    years: yearsData.data || [],
   }
 }
 
-export default async function ProfilSekolahPage() {
-  // 1. Ambil data profil dari API Laravel
-  const profile = await getCompanyProfile()
+export default async function SekolahPage() {
+  const { profile, years } = await getData()
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-10">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Profil Sekolah (CMS)</h1>
-        <p className="text-slate-600">Atur konten yang tampil di halaman depan website.</p>
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-gray-100 pb-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Pengaturan Sekolah</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Kelola informasi profil lembaga dan kontrol tahun pelajaran aktif sistem.
+          </p>
+        </div>
       </div>
 
-      {/* 2. Panggil Component Form (Client Side) & kirim datanya */}
-      <SchoolProfileForm initialData={profile} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <SchoolProfileForm initialData={profile} />
+          <AcademicYearTable data={years} />
+        </div>
+        <div className="lg:col-span-1">
+          <div className="sticky top-6">
+            <AcademicYearForm />
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

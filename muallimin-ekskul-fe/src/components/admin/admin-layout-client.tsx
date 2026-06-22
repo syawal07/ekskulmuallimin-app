@@ -10,13 +10,15 @@ import {
   User, 
   Users, 
   School, 
-  Trophy, 
+  Trophy,
+  Activity,
   Menu, 
   X,
   ClipboardCheck,
   ChevronRight,
   Image as ImageIcon,
   GraduationCap,
+  Medal,
   type LucideIcon,
   Loader2
 } from "lucide-react"
@@ -138,7 +140,7 @@ export default function AdminLayoutClient({
           />
           <MenuItem 
             href="/admin/ekskul" 
-            icon={Trophy} 
+            icon={Activity} 
             label="Data Ekskul" 
             isActive={isPathActive("/admin/ekskul")}
             onClick={() => setIsMobileMenuOpen(false)}
@@ -148,6 +150,13 @@ export default function AdminLayoutClient({
             icon={GraduationCap} 
             label="Data Perkaderan" 
             isActive={isPathActive("/admin/perkaderan")}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <MenuItem 
+            href="/admin/prestasi" 
+            icon={Medal} 
+            label="Data Prestasi" 
+            isActive={isPathActive("/admin/prestasi")}
             onClick={() => setIsMobileMenuOpen(false)}
           />
           <MenuItem 
@@ -170,7 +179,7 @@ export default function AdminLayoutClient({
           <MenuItem 
             href="/admin/sekolah"              
             icon={School} 
-            label="Profil Sekolah" 
+            label="Pengaturan & Tapel" 
             isActive={isPathActive("/admin/sekolah")} 
             onClick={() => setIsMobileMenuOpen(false)}
           />
