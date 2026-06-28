@@ -33,6 +33,7 @@ export async function uploadAssessmentExcel(formData: FormData) {
     return { error: "Terjadi kesalahan pada server saat mengunggah." }
   }
 }
+
 export async function updateAssessmentScore(id: string, score: number) {
   const cookieStore = await cookies()
   const token = cookieStore.get("session_token")?.value
@@ -72,6 +73,7 @@ export async function deleteAssessment(id: string) {
     return { error: "Terjadi kesalahan sistem" }
   }
 }
+
 export async function fetchAdminAssessments(exculId: string) {
   const cookieStore = await cookies()
   const token = cookieStore.get("session_token")?.value
@@ -89,7 +91,12 @@ export async function fetchAdminAssessments(exculId: string) {
     const result = await res.json()
     if (!res.ok) return { error: result.message || "Gagal mengambil data." }
     
-    return { success: true, data: result.data }
+    // PERBAIKAN: Menambahkan 'classes: result.classes' agar dikenali oleh TypeScript di Client
+    return { 
+      success: true, 
+      data: result.data, 
+      classes: result.classes 
+    }
   } catch (error) {
     return { error: "Terjadi kesalahan sistem saat mengambil data." }
   }

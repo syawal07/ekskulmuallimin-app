@@ -11,14 +11,17 @@ export default async function MentorLayout({
   const token = cookieStore.get("session_token")?.value
   const userRole = cookieStore.get("user_role")?.value
 
-  if (!token || userRole !== "MENTOR") {
+  // 1. KUNCI PERBAIKAN: Izinkan akses jika role adalah MENTOR ATAU PEMBINA
+  if (!token || (userRole !== "MENTOR" && userRole !== "PEMBINA")) {
     redirect("/login")
   }
 
   const name = cookieStore.get("user_name")?.value || "Pengajar"
   const username = cookieStore.get("user_username")?.value || "mentor"
-  const isMentorEkskul = cookieStore.get("is_mentor_ekskul")?.value === "true"
-  const isMentorPerkaderan = cookieStore.get("is_mentor_perkaderan")?.value === "true"
+  
+  // 2. KUNCI PERBAIKAN: Tentukan boolean secara dinamis dari userRole yang terbaca
+  const isMentorEkskul = userRole === "MENTOR"
+  const isMentorPerkaderan = userRole === "PEMBINA"
 
   const user = {
     name: name,

@@ -29,14 +29,16 @@ class DatabaseSeeder extends Seeder
 
         foreach ($ekskulInduk as $item) {
             $exculName = $item . ' (Induk)';
+            $cleanUsername = strtolower(str_replace([' ', '-'], '', $item)) . 'induk';
             
             $excul = Excul::create([
-                'name' => $exculName
+                'name' => $exculName,
+                'location' => 'INDUK'
             ]);
 
             $user = User::create([
                 'name' => 'Mentor ' . $item,
-                'username' => $exculName,
+                'username' => $cleanUsername,
                 'password' => Hash::make('password123'),
                 'role' => 'MENTOR',
             ]);
@@ -55,19 +57,25 @@ class DatabaseSeeder extends Seeder
 
         foreach ($ekskulTerpadu as $item) {
             $exculName = $item . ' (Sedayu)';
+            $cleanUsername = strtolower(str_replace([' ', '-'], '', $item)) . 'sedayu';
             
             $excul = Excul::create([
-                'name' => $exculName
+                'name' => $exculName,
+                'location' => 'TERPADU'
             ]);
 
             $user = User::create([
                 'name' => 'Mentor ' . $item,
-                'username' => $exculName,
+                'username' => $cleanUsername,
                 'password' => Hash::make('password123'),
                 'role' => 'MENTOR',
             ]);
 
             $user->mentoringExculs()->attach($excul->id);
         }
+
+        $this->call([
+            PerkaderanSeeder::class
+        ]);
     }
 }

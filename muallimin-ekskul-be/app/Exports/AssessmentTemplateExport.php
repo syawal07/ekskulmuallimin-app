@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Student;
+use App\Models\AcademicYear;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -12,18 +13,33 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class AssessmentTemplateExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
     protected $exculId;
+    protected $kelas; // Tambahkan properti kelas
 
-    public function __construct($exculId)
+    // Ubah constructor untuk menerima kelas
+    public function __construct($exculId, $kelas = null)
     {
         $this->exculId = $exculId;
+        $this->kelas = $kelas;
     }
 
     public function collection()
     {
-        return Student::where('excul_id', $this->exculId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $activeYear = AcademicYear::where('is_active', true)->first();
+
+        $query = Student::whereHas('exculs', function($q) use ($activeYear) {
+                $q->where('excul_student.excul_id', $this->exculId);
+                if ($activeYear) {
+                    $q->where('excul_student.academic_year_id', $activeYear->id);
+                }
+            })
+            ->where('is_active', true);
+            
+        // Terapkan filter kelas JIKA ada
+        if ($this->kelas) {
+            $query->where('class', $this->kelas);
+        }
+
+        return $query->orderBy('class')->orderBy('name')->get();
     }
 
     public function headings(): array
@@ -42,7 +58,7 @@ class AssessmentTemplateExport implements FromCollection, WithHeadings, WithMapp
             $student->id,
             $student->name,
             $student->class,
-            ''
+            '' // Kolom nilai dibiarkan kosong untuk diisi
         ];
     }
 

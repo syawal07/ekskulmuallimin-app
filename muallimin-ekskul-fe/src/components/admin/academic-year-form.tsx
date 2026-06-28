@@ -1,24 +1,32 @@
-'use server'
+'use client'
 
 import { createAcademicYear } from "@/actions/academicYearAction"
 import SubmitButton from "./submit-button"
+import { toast } from "sonner"
+import { useRef } from "react"
 
 interface AcademicYearFormProps {
   onSuccess?: () => void
 }
 
-export async function AcademicYearForm({ onSuccess }: AcademicYearFormProps) {
+export function AcademicYearForm({ onSuccess }: AcademicYearFormProps) {
+  const formRef = useRef<HTMLFormElement>(null)
+
   async function clientAction(formData: FormData) {
     const result = await createAcademicYear(null, formData)
-    if (result?.success && onSuccess) {
-      onSuccess()
+    if (result?.success) {
+      toast.success("Tahun Pelajaran berhasil ditambahkan")
+      formRef.current?.reset()
+      if (onSuccess) onSuccess()
+    } else {
+      toast.error(result?.error || "Gagal menyimpan data")
     }
   }
 
   return (
     <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
       <h3 className="text-lg font-semibold text-gray-800 mb-4">Tambah Tahun Pelajaran</h3>
-      <form action={clientAction} className="space-y-4">
+      <form ref={formRef} action={clientAction} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Tahun Pelajaran

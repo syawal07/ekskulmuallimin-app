@@ -15,7 +15,7 @@ class AchievementController extends Controller
             $query->where('student_id', $request->student_id);
         }
 
-        $achievements = $query->orderBy('tanggal', 'desc')->paginate(15);
+        $achievements = $query->orderBy('tanggal', 'desc')->get();
 
         return response()->json([
             'success' => true,

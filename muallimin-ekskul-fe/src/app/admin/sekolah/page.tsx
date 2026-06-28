@@ -19,11 +19,11 @@ async function getData() {
     }),
   ])
 
-  const profileData = resProfile.ok ? await resProfile.json() : { data: null }
+  const profileData = resProfile.ok ? await resProfile.json() : { data: {} }
   const yearsData = resYears.ok ? await resYears.json() : { data: [] }
 
   return {
-    profile: profileData.data,
+    profile: profileData.data || {},
     years: yearsData.data || [],
   }
 }

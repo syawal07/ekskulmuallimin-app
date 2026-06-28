@@ -1,79 +1,131 @@
 'use client'
 
-import { useActionState, useEffect } from "react"
+import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { createPerkaderan, updatePerkaderan } from "@/actions/perkaderanAction"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import SubmitButton from "@/components/admin/submit-button"
+import { toast } from "sonner"
+import { Loader2, Plus, Edit } from "lucide-react"
 
-type PerkaderanData = {
-  id: string | number
-  nama_jenjang: string
-  deskripsi: string | null
+export interface Perkaderan {
+  id: number;
+  nama_jenjang: string;
+  kategori: string;
+  target_kelas: string;
+  deskripsi: string | null;
 }
 
-interface PerkaderanModalProps {
-  isOpen: boolean
-  onClose: () => void
-  data: PerkaderanData | null
-}
+export default function PerkaderanModal({ initialData }: { initialData?: Perkaderan }) {
+  const [open, setOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
-export default function PerkaderanModal({ isOpen, onClose, data }: PerkaderanModalProps) {
-  const isEdit = !!data
-  
-  const actionToUse = isEdit ? updatePerkaderan.bind(null, data.id) : createPerkaderan
-  const [state, formAction] = useActionState(actionToUse, null)
+  const isEdit = !!initialData
 
-  useEffect(() => {
-    if (state?.success) {
-      onClose()
-    }
-  }, [state?.success, onClose])
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+
+    startTransition(async () => {
+      let res
+      if (isEdit && initialData) {
+        res = await updatePerkaderan(initialData.id, null, formData)
+      } else {
+        res = await createPerkaderan(null, formData)
+      }
+
+      if (res?.success) {
+        toast.success(isEdit ? "Data berhasil diperbarui" : "Data berhasil ditambahkan")
+        setOpen(false)
+        router.refresh()
+      } else {
+        toast.error(res?.error || "Terjadi kesalahan")
+      }
+    })
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {isEdit ? (
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+            <Edit className="w-4 h-4" />
+          </Button>
+        ) : (
+          <Button className="bg-primary hover:bg-primary/90 text-white shadow-sm">
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Jenjang
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Jenjang Perkaderan' : 'Tambah Jenjang Baru'}</DialogTitle>
-          <DialogDescription>
-            {isEdit ? 'Ubah informasi jenjang perkaderan di bawah ini.' : 'Masukkan nama dan deskripsi jenjang perkaderan baru.'}
-          </DialogDescription>
+          <DialogTitle>{isEdit ? "Edit Jenjang Perkaderan" : "Tambah Jenjang Perkaderan"}</DialogTitle>
         </DialogHeader>
-
-        <form action={formAction} className="space-y-4 py-4">
-          {state?.error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-200">
-              {state.error}
-            </div>
-          )}
-
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label htmlFor="nama_jenjang">Nama Jenjang</Label>
             <Input 
-              id="nama_jenjang"
+              id="nama_jenjang" 
               name="nama_jenjang" 
-              placeholder="Contoh: TKM 1" 
-              defaultValue={data?.nama_jenjang || ""}
+              defaultValue={initialData?.nama_jenjang} 
               required 
+              placeholder="Contoh: Fortasi"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="deskripsi">Deskripsi (Opsional)</Label>
-            <textarea 
-              id="deskripsi"
-              name="deskripsi" 
-              placeholder="Penjelasan singkat mengenai jenjang ini..." 
-              defaultValue={data?.deskripsi || ""}
-              className="flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
-            />
+            <Label htmlFor="kategori">Kategori</Label>
+            <select
+              id="kategori"
+              name="kategori"
+              defaultValue={initialData?.kategori || "Wajib"}
+              required
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="Wajib">Wajib</option>
+              <option value="Pendukung Utama">Pendukung Utama</option>
+              <option value="Pendukung Khusus">Pendukung Khusus</option>
+            </select>
           </div>
 
-          <div className="pt-4 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-            <SubmitButton>{isEdit ? 'Simpan Perubahan' : 'Tambah Jenjang'}</SubmitButton>
+          <div className="space-y-2">
+            <Label htmlFor="target_kelas">Target Kelas</Label>
+            <select
+              id="target_kelas"
+              name="target_kelas"
+              defaultValue={initialData?.target_kelas || "Semua Kelas"}
+              required
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="1">Kelas 1</option>
+              <option value="2">Kelas 2</option>
+              <option value="3">Kelas 3</option>
+              <option value="4">Kelas 4</option>
+              <option value="5">Kelas 5</option>
+              <option value="6">Kelas 6</option>
+              <option value="Semua Kelas">Semua Kelas</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="deskripsi">Deskripsi</Label>
+            <Input 
+              id="deskripsi" 
+              name="deskripsi" 
+              defaultValue={initialData?.deskripsi || ""} 
+              placeholder="Penjelasan singkat"
+            />
+          </div>
+          
+          <div className="pt-4 flex justify-end">
+            <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
+              {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {isEdit ? "Simpan Perubahan" : "Simpan Data"}
+            </Button>
           </div>
         </form>
       </DialogContent>

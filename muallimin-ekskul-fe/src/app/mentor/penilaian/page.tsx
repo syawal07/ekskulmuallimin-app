@@ -23,22 +23,24 @@ async function getAssessmentsData(exculId?: string) {
   const token = cookieStore.get("session_token")?.value
   const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL
 
-  if (!token || !apiUrl) return { assessments: [], missing_students: [] }
+  if (!token || !apiUrl) return { assessments: [], missing_students: [], classes: [] }
   try {
     const url = exculId ? `${apiUrl}/mentor/assessments?excul_id=${exculId}` : `${apiUrl}/mentor/assessments`
     const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` }, cache: 'no-store' })
-    if (!res.ok) return { assessments: [], missing_students: [] }
+    if (!res.ok) return { assessments: [], missing_students: [], classes: [] }
     const result = await res.json()
-    // Data sekarang berisi object dengan 2 array
-    return result.data || { assessments: [], missing_students: [] }
+    return result.data || { assessments: [], missing_students: [], classes: [] }
   } catch (e) {
-    return { assessments: [], missing_students: [] }
+    return { assessments: [], missing_students: [], classes: [] }
   }
 }
 
 export default async function MentorAssessmentPage() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get("session_token")?.value || ""
+
   const exculs = await getMentorExculs()
-  const data = exculs.length > 0 ? await getAssessmentsData(exculs[0].id) : { assessments: [], missing_students: [] }
+  const data = exculs.length > 0 ? await getAssessmentsData(exculs[0].id) : { assessments: [], missing_students: [], classes: [] }
 
   return (
     <div className="space-y-2 pb-12">
@@ -47,11 +49,12 @@ export default async function MentorAssessmentPage() {
         <p className="text-slate-600">Sistem penilaian otomatis berbasis KKO (Kata Kerja Operasional) Level Bloom.</p>
       </div>
       
-      {/* Kirim props missingStudents ke Client */}
       <AssessmentClient 
         exculs={exculs} 
         initialAssessments={data.assessments} 
-        missingStudents={data.missing_students} 
+        missingStudents={data.missing_students}
+        availableClasses={data.classes || []}
+        token={token}
       />
     </div>
   )

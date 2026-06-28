@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { UserPlus, ChevronLeft, ChevronRight, Users } from "lucide-react"
+import { UserPlus, ChevronLeft, ChevronRight, Users, CheckCircle2, XCircle } from "lucide-react"
 import Link from "next/link"
 import SiswaActionButtons from "@/components/admin/siswa-action-buttons"
 import FilterExculSiswa from "@/components/admin/filter-excul-siswa"
@@ -26,6 +26,7 @@ interface Perkaderan {
 interface PerkaderanStudent {
   id: number;
   status: string;
+  jabatan: string;
   perkaderan?: Perkaderan;
 }
 
@@ -37,25 +38,16 @@ interface Student {
   nisn: string | null;
   angkatan: string | null;
   jabatan_organisasi: string | null;
-  excul: Excul | null;
-  perkaderan_students?: PerkaderanStudent[];
+  is_active: boolean;
+  exculs?: Excul[];
+  perkaderans?: PerkaderanStudent[];
 }
 
 interface StudentResponse {
   data: Student[];
   total: number;
   last_page: number;
-}
-
-interface GroupedStudent {
-  name: string;
-  nis: string | null;
-  nisn: string | null;
-  class: string;
-  angkatan: string | null;
-  jabatan_organisasi: string | null;
-  perkaderan_students: PerkaderanStudent[];
-  records: Student[];
+  classes?: string[];
 }
 
 async function getExculs(): Promise<Excul[]> {
@@ -76,16 +68,17 @@ async function getExculs(): Promise<Excul[]> {
   }
 }
 
-async function getStudents(page: number, q: string, exculId: string): Promise<StudentResponse> {
+async function getStudents(page: number, q: string, exculId: string, kelas: string): Promise<StudentResponse> {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
     const token = await getToken();
-    if (!apiUrl || !token) return { data: [], total: 0, last_page: 1 };
+    if (!apiUrl || !token) return { data: [], total: 0, last_page: 1, classes: [] };
 
     const queryParams = new URLSearchParams({
       page: page.toString(),
       q: q || "",
-      exculId: exculId || ""
+      exculId: exculId || "",
+      kelas: kelas || ""
     });
 
     const res = await fetch(`${apiUrl}/admin/students?${queryParams.toString()}`, {
@@ -93,54 +86,41 @@ async function getStudents(page: number, q: string, exculId: string): Promise<St
       cache: 'no-store'
     });
 
-    if (!res.ok) return { data: [], total: 0, last_page: 1 };
+    if (!res.ok) return { data: [], total: 0, last_page: 1, classes: [] };
     const result = await res.json();
-    return result.data as StudentResponse;
+    
+    return {
+      data: result.data.data,
+      total: result.data.total,
+      last_page: result.data.last_page,
+      classes: result.classes || []
+    };
   } catch (e) {
-    return { data: [], total: 0, last_page: 1 };
+    return { data: [], total: 0, last_page: 1, classes: [] };
   }
 }
 
 export default async function AdminSiswaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; exculId?: string }>
+  searchParams: Promise<{ page?: string; q?: string; exculId?: string; kelas?: string }>
 }) {
   const params = await searchParams
   const page = Number(params.page) || 1
   const limit = 10
   const search = params.q || ""
   const filterExculId = params.exculId || ""
+  const filterKelas = params.kelas || ""
 
   const allExculs = await getExculs()
-  const studentData = await getStudents(page, search, filterExculId)
+  const studentData = await getStudents(page, search, filterExculId, filterKelas)
 
   const students = studentData.data
   const totalCount = studentData.total
   const totalPages = studentData.last_page
+  const availableClasses = studentData.classes || []
   const hasNextPage = page < totalPages
   const hasPrevPage = page > 1
-
-  const groupedMap = new Map<string, GroupedStudent>();
-  
-  students.forEach((siswa) => {
-    const key = siswa.nis ? siswa.nis : `${siswa.name}-${siswa.class}`;
-    if (!groupedMap.has(key)) {
-      groupedMap.set(key, {
-        name: siswa.name,
-        nis: siswa.nis,
-        nisn: siswa.nisn || null,
-        class: siswa.class,
-        angkatan: siswa.angkatan || null,
-        jabatan_organisasi: siswa.jabatan_organisasi || null,
-        perkaderan_students: siswa.perkaderan_students || [],
-        records: []
-      });
-    }
-    groupedMap.get(key)!.records.push(siswa);
-  });
-  
-  const groupedStudents = Array.from(groupedMap.values());
 
   return (
     <div className="space-y-6">
@@ -161,12 +141,12 @@ export default async function AdminSiswaPage({
 
       <Card className="border-slate-200 shadow-sm">
         <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
             <CardTitle className="text-base font-bold text-slate-800">
               Total Siswa: <span className="text-primary">{totalCount}</span>
             </CardTitle>
-            <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-              <FilterExculSiswa exculs={allExculs} />
+            <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto">
+              <FilterExculSiswa exculs={allExculs} classes={availableClasses} />
               <Suspense fallback={null}>
                 <SearchInput placeholder="Cari nama siswa..." />
               </Suspense>
@@ -180,24 +160,18 @@ export default async function AdminSiswaPage({
               <TableRow>
                 <TableHead className="w-[50px] text-center">No</TableHead>
                 <TableHead>Nama Siswa</TableHead>
-                <TableHead>Kelas / Identitas</TableHead>
-                <TableHead>Jabatan</TableHead>
-                <TableHead>Perkaderan</TableHead>
+                <TableHead>Kelas & NIS</TableHead>
+                <TableHead>Status Akademik</TableHead>
+                <TableHead className="min-w-[200px]">Perkaderan & Jabatan</TableHead>
                 <TableHead>Ekskul Aktif</TableHead>
                 <TableHead className="text-right pr-6">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {groupedStudents.length > 0 ? (
-                groupedStudents.map((siswa, index) => {
-                  const uniqueRecords = siswa.records.filter((record, idx, self) =>
-                    idx === self.findIndex((r) => r.excul?.id === record.excul?.id)
-                  );
-
-                  const activePerkaderan = siswa.perkaderan_students.find(p => p.status === 'Aktif');
-
+              {students.length > 0 ? (
+                students.map((siswa, index) => {
                   return (
-                    <TableRow key={siswa.nis || index} className="hover:bg-slate-50/50 transition-colors">
+                    <TableRow key={siswa.id} className="hover:bg-slate-50/50 transition-colors">
                       <TableCell className="font-medium text-slate-500 text-center">
                         {(page - 1) * limit + index + 1}
                       </TableCell>
@@ -205,6 +179,9 @@ export default async function AdminSiswaPage({
                         <div className="font-bold text-slate-900">{siswa.name}</div>
                         {siswa.angkatan && (
                           <div className="text-[11px] text-slate-400 mt-0.5">Angkatan {siswa.angkatan}</div>
+                        )}
+                        {siswa.jabatan_organisasi && (
+                          <div className="text-[11px] text-primary font-medium mt-0.5">Org: {siswa.jabatan_organisasi}</div>
                         )}
                       </TableCell>
                       <TableCell>
@@ -221,34 +198,51 @@ export default async function AdminSiswaPage({
                         </div>
                       </TableCell>
                       <TableCell>
-                        {siswa.jabatan_organisasi ? (
-                          <span className="text-sm font-semibold text-slate-700 bg-slate-100 px-2 py-1 rounded-md border border-slate-200">
-                            {siswa.jabatan_organisasi}
+                        {siswa.is_active ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Aktif
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-400 italic">Santri</span>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                            <XCircle className="w-3.5 h-3.5" />
+                            Non-Aktif / Lulus
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>
-                        {activePerkaderan?.perkaderan?.nama_jenjang ? (
-                          <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-none font-bold">
-                            {activePerkaderan.perkaderan.nama_jenjang}
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-slate-400 italic">Belum Diplot</span>
-                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {siswa.perkaderans && siswa.perkaderans.length > 0 ? (
+                            siswa.perkaderans.map((p, i) => (
+                              <div key={i} className="flex flex-col items-start p-1.5 bg-slate-50 border border-slate-100 rounded-md">
+                                <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-none font-bold text-[10px] px-1.5 py-0">
+                                  {p.perkaderan?.nama_jenjang || "Tidak Diketahui"}
+                                </Badge>
+                                <span className="text-[10px] text-slate-500 mt-1">
+                                  {p.jabatan || 'Peserta'}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">Belum Diplot</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1.5">
-                          {uniqueRecords.map((record) => (
-                            <Badge key={record.id} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shadow-none">
-                              {record.excul?.name || "-"}
-                            </Badge>
-                          ))}
+                          {siswa.exculs && siswa.exculs.length > 0 ? (
+                            siswa.exculs.map((ex) => (
+                              <Badge key={ex.id} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shadow-none text-[10px]">
+                                {ex.name}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">Belum Mengikuti</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right pr-6">
-                        <SiswaActionButtons studentName={siswa.name} records={siswa.records} />
+                        <SiswaActionButtons studentId={siswa.id} studentName={siswa.name} />
                       </TableCell>
                     </TableRow>
                   );
@@ -259,7 +253,7 @@ export default async function AdminSiswaPage({
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Users className="w-10 h-10 text-slate-200" />
                       <p className="font-medium">Data siswa tidak ditemukan.</p>
-                      <p className="text-xs text-slate-400">Coba ganti filter ekskul atau kata kunci pencarian.</p>
+                      <p className="text-xs text-slate-400">Coba ganti filter kelas, ekskul atau kata kunci pencarian.</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -273,7 +267,7 @@ export default async function AdminSiswaPage({
             </div>
             <div className="flex gap-2">
               <Link
-                href={`/admin/siswa?page=${page - 1}&q=${search}&exculId=${filterExculId}`}
+                href={`/admin/siswa?page=${page - 1}&q=${search}&exculId=${filterExculId}&kelas=${filterKelas}`}
                 scroll={false}
                 className={!hasPrevPage ? "pointer-events-none" : ""}
               >
@@ -282,7 +276,7 @@ export default async function AdminSiswaPage({
                 </Button>
               </Link>
               <Link
-                href={`/admin/siswa?page=${page + 1}&q=${search}&exculId=${filterExculId}`}
+                href={`/admin/siswa?page=${page + 1}&q=${search}&exculId=${filterExculId}&kelas=${filterKelas}`}
                 scroll={false}
                 className={!hasNextPage ? "pointer-events-none" : ""}
               >

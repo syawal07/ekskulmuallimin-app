@@ -1,134 +1,134 @@
+import { cookies } from "next/headers"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { UserPlus, User } from "lucide-react"
-import GuruActionButtons from "@/components/admin/guru-action-buttons" 
-import { getToken } from "@/lib/session"
+import { Plus, Search } from "lucide-react"
+import GuruActionButtons from "@/components/admin/guru-action-buttons"
 
-export const dynamic = "force-dynamic"
-
-interface Excul {
-  id: string;
-  name: string;
+interface RelasiItem {
+  id: number | string;
+  name?: string;
+  nama_jenjang?: string;
 }
 
-interface Mentor {
-  id: string;
+interface MentorItem {
+  id: number | string;
   name: string;
   username: string;
-  mentoring_exculs: Excul[];
+  role: string;
+  mentoring_exculs?: RelasiItem[];
+  mentoringExculs?: RelasiItem[];
+  perkaderans?: RelasiItem[];
 }
 
-async function getMentors(): Promise<Mentor[]> {
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
-    const token = await getToken();
-    if (!apiUrl || !token) return [];
+async function getMentors(role?: string) {
+  const cookieStore = await cookies()
+  const token = cookieStore.get("session_token")?.value
+  const roleFilter = role ? `?role=${role}` : ""
+  
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL}/admin/mentors${roleFilter}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  })
 
-    const res = await fetch(`${apiUrl}/admin/mentors`, {
-      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
-      cache: 'no-store'
-    });
-    
-    if (!res.ok) return [];
-    const result = await res.json();
-    return result.data as Mentor[];
-  } catch (e) {
-    return [];
-  }
+  if (!res.ok) return []
+  const result = await res.json()
+  return result.data || []
 }
 
-export default async function AdminGuruPage() {
-  const mentors = await getMentors();
+export default async function GuruPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }> 
+}) {
+  const resolvedSearchParams = await searchParams
+  const role = typeof resolvedSearchParams.role === 'string' ? resolvedSearchParams.role : undefined
+  
+  const mentors = await getMentors(role)
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Data Guru / Mentor</h1>
-          <p className="text-slate-600">Manajemen akun pengajar ekstrakurikuler.</p>
+          <h1 className="text-2xl font-bold text-slate-800">Manajemen Guru / Pembina</h1>
+          <p className="text-slate-500 text-sm mt-1">Kelola data pembina ekskul dan perkaderan</p>
         </div>
-        
         <Link href="/admin/guru/baru">
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/20">
-            <UserPlus className="w-4 h-4 mr-2" /> Tambah Guru Baru
+          <Button className="bg-primary hover:bg-primary/90 text-white shadow-sm rounded-xl h-10">
+            <Plus className="w-4 h-4 mr-2" /> Tambah Guru
           </Button>
         </Link>
       </div>
 
-      <Card className="p-6 border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-slate-800">
-             Total Pengajar: <span className="text-emerald-600">{mentors.length}</span>
-          </h2>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Cari guru..." 
+              className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all bg-white"
+            />
+          </div>
+          <div className="flex gap-2">
+             <Link href="/admin/guru">
+               <span className={`px-3 py-1.5 text-xs font-medium rounded-md border ${!role ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>Semua</span>
+             </Link>
+             <Link href="/admin/guru?role=MENTOR">
+               <span className={`px-3 py-1.5 text-xs font-medium rounded-md border ${role === 'MENTOR' ? 'bg-primary text-white border-primary' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>Pelatih Ekskul</span>
+             </Link>
+             <Link href="/admin/guru?role=PEMBINA">
+               <span className={`px-3 py-1.5 text-xs font-medium rounded-md border ${role === 'PEMBINA' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>Pembina Perkaderan</span>
+             </Link>
+          </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
-              <tr>
-                <th className="px-6 py-4 font-bold">No</th>
-                <th className="px-6 py-4 font-bold">Nama Lengkap</th>
-                <th className="px-6 py-4 font-bold">Username Login</th>
-                <th className="px-6 py-4 font-bold">Ekskul Diampu</th>
-                <th className="px-6 py-4 font-bold text-center">Aksi</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-white border-b border-slate-100 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-4">Nama Lengkap</th>
+                <th className="px-6 py-4">Username</th>
+                <th className="px-6 py-4">Role & Hak Akses</th>
+                <th className="px-6 py-4 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {mentors.length > 0 ? (
-                mentors.map((mentor, index) => (
-                  <tr key={mentor.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-500">{index + 1}</td>
-                    
-                    <td className="px-6 py-4 font-bold text-slate-900">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700">
-                          <User className="w-4 h-4" />
-                        </div>
-                        {mentor.name}
+            <tbody className="divide-y divide-slate-50 text-sm text-slate-600 bg-white">
+              {mentors.map((item: MentorItem) => {
+                const isMentor = item.role === 'MENTOR'
+                const relasi = isMentor ? (item.mentoring_exculs || item.mentoringExculs || []) : (item.perkaderans || [])
+                
+                return (
+                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-slate-800">{item.name}</td>
+                    <td className="px-6 py-4 text-slate-500">@{item.username}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-2">
+                        <span className={`w-fit inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${isMentor ? 'bg-primary/10 text-primary' : 'bg-amber-100 text-amber-700'}`}>
+                          {isMentor ? 'Pelatih Ekskul' : 'Pembina Perkaderan'}
+                        </span>
+                        {relasi.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {relasi.map((r: RelasiItem) => (
+                              <span key={r.id} className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 text-[11px] whitespace-nowrap">
+                                {isMentor ? r.name : r.nama_jenjang}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-red-500 italic">Belum ada tanggungan</span>
+                        )}
                       </div>
                     </td>
-
-                    <td className="px-6 py-4 text-slate-600 font-mono bg-slate-50/50 rounded px-2 w-fit">
-                      @{mentor.username}
-                    </td>
-
-                    <td className="px-6 py-4 text-slate-600">
-                      {mentor.mentoring_exculs && mentor.mentoring_exculs.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {mentor.mentoring_exculs.map(excul => (
-                            <span key={excul.id} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md border border-blue-100">
-                              {excul.name}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 text-xs italic">- Belum ditugaskan -</span>
-                      )}
-                    </td>
-
-                    <td className="px-6 py-4 text-center">
-                      <GuruActionButtons 
-                        userId={mentor.id} 
-                        userName={mentor.name} 
-                      />
+                    <td className="px-6 py-4 text-right">
+                      <GuruActionButtons userId={item.id.toString()} userName={item.name} />
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400 bg-slate-50/30">
-                    <div className="flex flex-col items-center gap-2">
-                      <User className="w-8 h-8 opacity-50" />
-                      <p>Belum ada data guru. Silakan tambah baru.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
+                )
+              })}
             </tbody>
           </table>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

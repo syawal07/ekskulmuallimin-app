@@ -1,6 +1,7 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import AdminPerkaderanClient from "@/components/admin/admin-perkaderan-client"
+import PerkaderanModal from "@/components/admin/perkaderan-modal"
 
 export const dynamic = "force-dynamic"
 
@@ -38,11 +39,18 @@ export default async function AdminPerkaderanPage() {
     redirect("/login")
   }
 
-  const perkaderanData = await getPerkaderans()
+  const data = await getPerkaderans()
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <AdminPerkaderanClient data={perkaderanData} />
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Master Data Perkaderan</h1>
+          <p className="text-slate-500 text-sm mt-1">Kelola jenjang perkaderan, kategori, dan target kelas.</p>
+        </div>
+        <PerkaderanModal />
+      </div>
+      <AdminPerkaderanClient data={data} />
     </div>
   )
 }

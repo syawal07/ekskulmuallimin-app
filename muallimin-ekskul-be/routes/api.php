@@ -18,6 +18,8 @@ use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\PerkaderanController;
 use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\AchievementController;
+use App\Http\Controllers\PerkaderanMentorController;
+use App\Http\Controllers\AdminPerkaderanMonitorController;
 
 // =====================================================================
 // PUBLIC ROUTES (TIDAK PERLU LOGIN)
@@ -89,8 +91,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/attendances/sessions', [AdminAttendanceController::class, 'getSessions']);
     Route::get('/admin/attendances/export', [AdminAttendanceController::class, 'export']);
 
+    // Mentor - Manajemen Perkaderan
+    Route::get('/mentor/perkaderan/dashboard', [PerkaderanMentorController::class, 'getDashboard']);
+    Route::get('/mentor/perkaderan/presensi-setup', [PerkaderanMentorController::class, 'getPresensiSetup']);
+    Route::post('/mentor/perkaderan/attendance', [PerkaderanMentorController::class, 'storePresensi']);
+    Route::get('/mentor/perkaderan/history', [PerkaderanMentorController::class, 'getHistory']);
+    Route::delete('/mentor/perkaderan/attendance', [PerkaderanMentorController::class, 'destroySession']);
+    Route::get('/mentor/perkaderan/assessments', [PerkaderanMentorController::class, 'getPenilaian']);
+    Route::post('/mentor/perkaderan/assessments', [PerkaderanMentorController::class, 'storePenilaian']);
+
     Route::get('/admin/assessments', [AdminAssessmentController::class, 'index']);
     Route::get('/admin/assessments/export', [AdminAssessmentController::class, 'export']);
+    Route::get('/admin/assessments/status', [AdminAssessmentController::class, 'statusMonitoring']);
+
+    // Rute Monitoring Perkaderan untuk Admin
+    Route::get('/admin/perkaderan/monitoring', [AdminPerkaderanMonitorController::class, 'index']);
 
     // Admin - CMS & Website Profile
     Route::get('/admin/news', [NewsController::class, 'index']);
@@ -107,10 +122,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/admin/company-profile', [CompanyProfileController::class, 'update']);
 
     // Admin - Manajemen Prestasi
-    Route::get('/admin/achievements', [App\Http\Controllers\AchievementController::class, 'index']);
-    Route::post('/admin/achievements', [App\Http\Controllers\AchievementController::class, 'store']);
-    Route::put('/admin/achievements/{id}', [App\Http\Controllers\AchievementController::class, 'update']);
-    Route::delete('/admin/achievements/{id}', [App\Http\Controllers\AchievementController::class, 'destroy']);
+    Route::get('/admin/achievements', [AchievementController::class, 'index']);
+    Route::post('/admin/achievements', [AchievementController::class, 'store']);
+    Route::put('/admin/achievements/{id}', [AchievementController::class, 'update']);
+    Route::delete('/admin/achievements/{id}', [AchievementController::class, 'destroy']);
 
 
     // =====================================================================

@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Download, Upload, Loader2, FileSpreadsheet, CheckCircle2, Pencil, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Download, Upload, Loader2, CheckCircle2, Pencil, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 import { uploadAssessmentExcel, updateAssessmentScore, deleteAssessment } from "@/actions/assessmentAction"
 
@@ -15,15 +16,21 @@ interface MissingStudentProps { id: string; name: string; class: string; }
 export default function AssessmentClient({ 
   exculs, 
   initialAssessments,
-  missingStudents 
+  missingStudents,
+  availableClasses,
+  token 
 }: { 
   exculs: ExculProps[], 
   initialAssessments: AssessmentProps[],
-  missingStudents: MissingStudentProps[]
+  missingStudents: MissingStudentProps[],
+  availableClasses: string[],
+  token: string 
 }) {
   const activeExcul = exculs.length > 0 ? exculs[0] : null
   const [uploading, setUploading] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const [dataList, setDataList] = useState<AssessmentProps[]>(initialAssessments)
+  const [selectedKelas, setSelectedKelas] = useState<string>("")
 
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
@@ -34,7 +41,51 @@ export default function AssessmentClient({
   const [editScore, setEditScore] = useState<number | string>("")
   const [saving, setSaving] = useState(false)
 
+  const backendUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+
   useEffect(() => { setDataList(initialAssessments) }, [initialAssessments])
+
+  const handleDownloadTemplate = async () => {
+    if (!activeExcul || !token) {
+      toast.error("Sesi tidak valid, silakan muat ulang halaman.");
+      return;
+    }
+    setDownloading(true);
+    
+    try {
+      const queryParams = new URLSearchParams({ excul_id: activeExcul.id });
+      if (selectedKelas) queryParams.append('kelas', selectedKelas);
+
+      const response = await fetch(`${backendUrl}/mentor/assessments/template?${queryParams.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}` 
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Gagal mengunduh template dari server.");
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      const namaKelas = selectedKelas ? `_Kelas_${selectedKelas.replace(/ /g, '')}` : '_Semua_Kelas';
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `Template_Nilai_${activeExcul.name.replace(/ /g, '_')}${namaKelas}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+    } catch (error) {
+      toast.error("Terjadi kesalahan saat mengunduh template.");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -49,6 +100,7 @@ export default function AssessmentClient({
       toast.error(res.error)
     } else {
       toast.success(res.message || "Nilai berhasil diproses!", { duration: 6000 })
+      setTimeout(() => window.location.reload(), 1500)
     }
     
     setUploading(false)
@@ -83,27 +135,51 @@ export default function AssessmentClient({
   return (
     <div className="space-y-8 mt-6 pb-10">
       
-      {/* KOTAK UPLOAD */}
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-8 max-w-3xl">
+      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-8 max-w-4xl">
         <div className="space-y-3">
           <Label className="text-base font-semibold">1. Ekstrakurikuler yang Diampu</Label>
           <Input value={activeExcul.name} disabled className="bg-slate-50 font-bold text-slate-800" />
         </div>
         <div className="space-y-3">
           <Label className="text-base font-semibold">2. Unduh & Unggah Template</Label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button variant="outline" className="h-16 flex flex-col justify-center gap-1 border-emerald-200 text-emerald-700 bg-emerald-50" onClick={() => window.location.href = `/api/export-assessment-template?exculId=${activeExcul.id}`}>
-              <span className="flex items-center gap-2 font-bold"><Download className="w-4 h-4"/> Unduh Template Excel</span>
-            </Button>
-            <div className="relative border-2 border-dashed border-slate-300 rounded-lg h-16 flex items-center justify-center hover:bg-emerald-50 transition-colors">
-              <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleUpload} disabled={uploading}/>
-              {uploading ? <span className="flex gap-2 text-emerald-600 font-bold text-sm"><Loader2 className="w-4 h-4 animate-spin"/> Memproses...</span> : <span className="flex gap-2 text-slate-600 font-bold text-sm"><Upload className="w-4 h-4"/> Unggah Excel (Isi Nilai)</span>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <div className="flex flex-col gap-3">
+              <Select value={selectedKelas} onValueChange={(val) => setSelectedKelas(val === "all" ? "" : val)}>
+                <SelectTrigger className="bg-slate-50 border-slate-200">
+                  <SelectValue placeholder="Pilih Kelas (Opsional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Kelas</SelectItem>
+                  {availableClasses.map(cls => (
+                    <SelectItem key={cls} value={cls}>Kelas {cls}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Button 
+                onClick={handleDownloadTemplate}
+                disabled={downloading}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 h-12 flex-row gap-2"
+              >
+                {downloading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin"/> Mengunduh...</>
+                ) : (
+                  <><Download className="w-4 h-4"/> Unduh Template</>
+                )}
+              </Button>
+            </div>
+
+            <div className="flex flex-col justify-end">
+              <div className="relative border-2 border-dashed border-slate-300 rounded-lg h-12 flex items-center justify-center hover:bg-emerald-50 transition-colors">
+                <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleUpload} disabled={uploading}/>
+                {uploading ? <span className="flex gap-2 text-emerald-600 font-bold text-sm"><Loader2 className="w-4 h-4 animate-spin"/> Memproses...</span> : <span className="flex gap-2 text-slate-600 font-bold text-sm"><Upload className="w-4 h-4"/> Unggah Excel (Isi Nilai)</span>}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* TABEL HASIL PENILAIAN */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden max-w-full">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-600" /> Rekapitulasi Nilai</h3>
@@ -118,7 +194,6 @@ export default function AssessmentClient({
                 <th className="px-6 py-4 text-center">Angka</th>
                 <th className="px-6 py-4 text-center">Predikat</th>
                 <th className="px-6 py-4">Level Bloom</th>
-                {/* 👇 TAMBAHAN KOLOM DESKRIPSI 👇 */}
                 <th className="px-6 py-4 w-1/3">Deskripsi Otomatis</th>
                 <th className="px-6 py-4 text-right">Aksi</th>
               </tr>
@@ -134,7 +209,6 @@ export default function AssessmentClient({
                     <td className="px-6 py-4 text-center font-bold text-emerald-600 text-base">{item.score}</td>
                     <td className="px-6 py-4 text-center"><span className="px-2 py-1 bg-slate-200 text-slate-700 font-bold rounded">{item.predicate}</span></td>
                     <td className="px-6 py-4 font-medium text-slate-700">{item.bloom_level}</td>
-                    {/* 👇 TAMPILAN DATA DESKRIPSI 👇 */}
                     <td className="px-6 py-4 text-xs text-slate-500 leading-relaxed min-w-[250px]">{item.description}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
@@ -160,7 +234,6 @@ export default function AssessmentClient({
         )}
       </div>
 
-      {/* DAFTAR SISWA BELUM DINILAI */}
       {missingStudents && missingStudents.length > 0 && (
         <div className="bg-orange-50/80 border border-orange-200 rounded-xl p-5">
           <div className="flex items-start gap-3">
@@ -182,7 +255,6 @@ export default function AssessmentClient({
         </div>
       )}
 
-      {/* MODAL EDIT NILAI */}
       {editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">

@@ -26,10 +26,6 @@ return new class extends Migration
             $table->foreignUuid('excul_id')->nullable()->constrained()->cascadeOnDelete();
             $table->foreignId('academic_year_id')->nullable()->constrained()->cascadeOnDelete();
         });
-
-        Schema::table('perkaderan_students', function (Blueprint $table) {
-            $table->string('jabatan')->nullable()->after('status');
-        });
     }
 
     public function down(): void
@@ -45,10 +41,6 @@ return new class extends Migration
             $table->dropColumn('excul_id');
             $table->dropForeign(['academic_year_id']);
             $table->dropColumn('academic_year_id');
-        });
-
-        Schema::table('perkaderan_students', function (Blueprint $table) {
-            $table->dropColumn('jabatan');
         });
     }
 };

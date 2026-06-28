@@ -1,7 +1,6 @@
 import { cookies } from "next/headers"
-import { WaliDashboardClient } from "@/components/wali/wali-dashboard-client"
+import WaliDashboardClient from "@/components/wali/wali-dashboard-client"
 
-// Menghindari caching agresif dari Next.js agar data presensi selalu realtime
 export const dynamic = "force-dynamic" 
 
 async function getWaliData() {
@@ -9,7 +8,7 @@ async function getWaliData() {
   const cookieStore = await cookies();
   const token = cookieStore.get("session_token")?.value;
 
-  if (!token) return null;
+  if (!token) return { error: "Sesi Anda telah berakhir, silakan login ulang." };
 
   try {
     const headers = {
@@ -17,40 +16,44 @@ async function getWaliData() {
       "Accept": "application/json"
     };
 
-    // Melakukan fetch ke 3 endpoint API secara paralel agar lebih cepat
-    const [dashboardRes, attendanceRes, assessmentRes] = await Promise.all([
-      fetch(`${apiUrl}/wali/dashboard`, { headers, cache: 'no-store' }),
-      fetch(`${apiUrl}/wali/attendances`, { headers, cache: 'no-store' }),
-      fetch(`${apiUrl}/wali/assessments`, { headers, cache: 'no-store' })
-    ]);
+    const dashboardRes = await fetch(`${apiUrl}/wali/dashboard`, { headers, cache: 'no-store' });
+    
+    // Jika tidak OK (404 atau 500), tangkap pesan error asli dari Backend!
+    if (!dashboardRes.ok) {
+      const errData = await dashboardRes.json().catch(() => ({ message: "Gagal memuat API dari Server." }));
+      return { error: errData.message || `Error Kode: ${dashboardRes.status}` };
+    }
 
-    if (!dashboardRes.ok) return null;
-
+    const profileRes = await fetch(`${apiUrl}/admin/profile`, { headers, cache: 'no-store' });
     const dashboardJson = await dashboardRes.json();
-    const attendanceJson = attendanceRes.ok ? await attendanceRes.json() : { data: [] };
-    const assessmentJson = assessmentRes.ok ? await assessmentRes.json() : { data: [] };
+    const profileJson = profileRes.ok ? await profileRes.json() : null;
 
     return {
-      student: dashboardJson.data.student,
-      excul: dashboardJson.data.excul,
-      attendances: attendanceJson.data,
-      assessments: assessmentJson.data
+      dashboard: dashboardJson.data,
+      schoolProfile: profileJson?.data || null
     };
 
   } catch (error) {
-    console.error("Gagal menarik data wali:", error);
-    return null;
+    return { error: "Koneksi ke Server terputus. Pastikan Backend berjalan." };
   }
 }
 
 export default async function WaliDashboardPage() {
   const data = await getWaliData();
 
-  if (!data) {
+  if (data?.error) {
     return (
-      <div className="p-8">
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 font-bold">
-          Gagal memuat data. Sesi mungkin telah berakhir, silakan login ulang.
+      <div className="p-8 max-w-4xl mx-auto mt-10">
+        <div className="bg-red-50 text-red-700 p-6 rounded-2xl border border-red-200 shadow-sm animate-in fade-in zoom-in duration-300">
+          <h2 className="text-xl font-black mb-2 flex items-center gap-2">
+            ⚠️ Perhatian
+          </h2>
+          <p className="font-medium">{data.error}</p>
+          <div className="mt-4 pt-4 border-t border-red-200/50">
+            <p className="text-sm text-red-600/80">
+              Tips: Jika data siswa tidak ditemukan, pastikan akun <b>Wali Santri</b> memiliki Username (NIS) yang sama persis dengan yang ada di menu <b>Data Siswa (Admin)</b>.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -61,16 +64,11 @@ export default async function WaliDashboardPage() {
       <div>
         <h1 className="text-3xl font-black text-slate-900">Dashboard Wali Santri</h1>
         <p className="text-slate-500 mt-2">
-          Pantau presensi dan perkembangan ekstrakurikuler putra/putri Anda.
+          Pantau presensi, evaluasi, dan rekam jejak prestasi putra/putri Anda.
         </p>
       </div>
 
-      <WaliDashboardClient 
-        student={data.student}
-        excul={data.excul}
-        attendances={data.attendances}
-        assessments={data.assessments}
-      />
+      <WaliDashboardClient data={data.dashboard} />
     </div>
   )
 }

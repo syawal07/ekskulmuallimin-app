@@ -8,39 +8,61 @@ type Excul = {
   name: string
 }
 
-export default function FilterExculSiswa({ exculs }: { exculs: Excul[] }) {
+export default function FilterExculSiswa({ 
+  exculs,
+  classes = []
+}: { 
+  exculs: Excul[]
+  classes?: string[]
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  // Ambil nilai ekskul yang sedang dipilih dari URL (jika ada)
   const currentExcul = searchParams.get("exculId") || "all"
+  const currentKelas = searchParams.get("kelas") || "all"
 
-  const handleFilterChange = (value: string) => {
+  const handleFilterChange = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString())
     
     if (value === "all") {
-      params.delete("exculId") // Hapus filter jika pilih "Semua"
+      params.delete(key)
     } else {
-      params.set("exculId", value) // Set filter ID
-      params.set("page", "1") // Reset ke halaman 1 tiap ganti filter
+      params.set(key, value)
     }
+    params.set("page", "1")
 
     router.push(`?${params.toString()}`)
   }
 
   return (
-    <Select value={currentExcul} onValueChange={handleFilterChange}>
-      <SelectTrigger className="w-[200px] bg-white border-slate-200 shadow-sm">
-        <SelectValue placeholder="Filter Ekskul" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">📂 Semua Ekskul</SelectItem>
-        {exculs.map((ex) => (
-          <SelectItem key={ex.id} value={ex.id}>
-            🏆 {ex.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="flex flex-col sm:flex-row gap-3">
+      <Select value={currentKelas} onValueChange={(val) => handleFilterChange("kelas", val)}>
+        <SelectTrigger className="w-[160px] bg-white border-slate-200 shadow-sm">
+          <SelectValue placeholder="Filter Kelas" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">📚 Semua Kelas</SelectItem>
+          {classes.map((cls) => (
+            <SelectItem key={cls} value={cls}>
+              Kelas {cls}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={currentExcul} onValueChange={(val) => handleFilterChange("exculId", val)}>
+        <SelectTrigger className="w-[200px] bg-white border-slate-200 shadow-sm">
+          <SelectValue placeholder="Filter Ekskul" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">📂 Semua Ekskul</SelectItem>
+          {exculs.map((ex) => (
+            <SelectItem key={ex.id} value={ex.id}>
+              🏆 {ex.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   )
 }

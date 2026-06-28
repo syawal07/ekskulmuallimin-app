@@ -10,7 +10,6 @@ import {
   User, 
   Users, 
   School, 
-  Trophy,
   Activity,
   Menu, 
   X,
@@ -149,7 +148,8 @@ export default function AdminLayoutClient({
             href="/admin/perkaderan" 
             icon={GraduationCap} 
             label="Data Perkaderan" 
-            isActive={isPathActive("/admin/perkaderan")}
+            // Modifikasi agar tidak bentrok dengan monitoring perkaderan
+            isActive={pathname === "/admin/perkaderan" || (pathname.startsWith("/admin/perkaderan/") && !pathname.includes("/monitoring"))}
             onClick={() => setIsMobileMenuOpen(false)}
           />
           <MenuItem 
@@ -159,18 +159,29 @@ export default function AdminLayoutClient({
             isActive={isPathActive("/admin/prestasi")}
             onClick={() => setIsMobileMenuOpen(false)}
           />
+          
+          <p className="px-4 text-xs font-bold text-slate-400 uppercase mb-3 mt-8 tracking-wider">Monitoring</p>
+
           <MenuItem 
             href="/admin/presensi" 
             icon={ClipboardCheck} 
-            label="Monitoring Presensi" 
+            label="Presensi Ekskul" 
             isActive={isPathActive("/admin/presensi")}
             onClick={() => setIsMobileMenuOpen(false)}
           />
           <MenuItem 
             href="/admin/penilaian" 
             icon={ClipboardCheck} 
-            label="Monitoring Penilaian" 
+            label="Penilaian Ekskul" 
             isActive={isPathActive("/admin/penilaian")}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          {/* MENU BARU: MONITORING PERKADERAN */}
+          <MenuItem 
+            href="/admin/perkaderan/monitoring" 
+            icon={ClipboardCheck} 
+            label="Rekap Perkaderan" 
+            isActive={isPathActive("/admin/perkaderan/monitoring")}
             onClick={() => setIsMobileMenuOpen(false)}
           />
 

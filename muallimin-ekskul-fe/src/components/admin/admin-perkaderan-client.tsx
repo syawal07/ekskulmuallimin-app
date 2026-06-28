@@ -1,127 +1,99 @@
 'use client'
 
-import { useState, useTransition } from "react"
-import { Plus, Pencil, Trash2, GraduationCap, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import PerkaderanModal from "./perkaderan-modal"
+import { useTransition } from "react"
 import { deletePerkaderan } from "@/actions/perkaderanAction"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import PerkaderanModal, { Perkaderan } from "./perkaderan-modal"
+import { Button } from "@/components/ui/button"
+import { Trash2 } from "lucide-react"
 
-type PerkaderanData = {
-  id: string | number
-  nama_jenjang: string
-  deskripsi: string | null
-}
-
-export default function AdminPerkaderanClient({ data }: { data: PerkaderanData[] }) {
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedData, setSelectedData] = useState<PerkaderanData | null>(null)
+export default function AdminPerkaderanClient({ data }: { data: Perkaderan[] }) {
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
-  const handleOpenAdd = () => {
-    setSelectedData(null)
-    setIsModalOpen(true)
-  }
-
-  const handleOpenEdit = (item: PerkaderanData) => {
-    setSelectedData(item)
-    setIsModalOpen(true)
-  }
-
-  const handleDelete = (id: string | number, name: string) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus jenjang "${name}"?`)) {
+  const handleDelete = (id: number) => {
+    if (confirm("Apakah Anda yakin ingin menghapus jenjang perkaderan ini?")) {
       startTransition(async () => {
-        const result = await deletePerkaderan(id)
-        if (result?.error) {
-          alert(result.error)
+        const res = await deletePerkaderan(id)
+        if (res?.success) {
+          toast.success("Jenjang berhasil dihapus")
+          router.refresh()
+        } else {
+          toast.error(res?.error || "Gagal menghapus jenjang")
         }
       })
     }
   }
 
+  const getKategoriBadge = (kategori: string) => {
+    switch (kategori) {
+      case "Wajib":
+        return "bg-red-100 text-red-700 border-red-200"
+      case "Pendukung Utama":
+        return "bg-blue-100 text-blue-700 border-blue-200"
+      case "Pendukung Khusus":
+        return "bg-amber-100 text-amber-700 border-amber-200"
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-200"
+    }
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-800">Master Data Perkaderan</h2>
-          <p className="text-slate-500 text-sm">Kelola jenjang dan tingkatan kaderisasi santri di sini.</p>
-        </div>
-        <Button onClick={handleOpenAdd} className="bg-primary hover:bg-primary/90 text-white shadow-md">
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah Jenjang
-        </Button>
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mt-6">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-50/70 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4">Nama Jenjang</th>
+              <th className="px-6 py-4">Kategori</th>
+              <th className="px-6 py-4">Target Kelas</th>
+              <th className="px-6 py-4">Deskripsi</th>
+              <th className="px-6 py-4 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 text-sm text-gray-600">
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  Belum ada data perkaderan
+                </td>
+              </tr>
+            ) : (
+              data.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50/40 transition-colors">
+                  <td className="px-6 py-4 font-bold text-gray-800">{item.nama_jenjang}</td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getKategoriBadge(item.kategori)}`}>
+                      {item.kategori}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                      {item.target_kelas === "Semua Kelas" ? "Semua Kelas" : `Kelas ${item.target_kelas}`}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-gray-500">{item.deskripsi || '-'}</td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <PerkaderanModal initialData={item} />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={isPending}
+                        onClick={() => handleDelete(item.id)}
+                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-
-      <Card className="border-slate-200 shadow-sm overflow-hidden">
-        <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <GraduationCap className="w-5 h-5 text-primary" />
-            Daftar Jenjang
-          </CardTitle>
-          <CardDescription>Menampilkan seluruh data tingkat perkaderan yang aktif di sistem.</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-slate-50">
-                <TableRow>
-                  <TableHead className="w-[80px] text-center font-bold">No</TableHead>
-                  <TableHead className="font-bold">Nama Jenjang</TableHead>
-                  <TableHead className="font-bold">Deskripsi</TableHead>
-                  <TableHead className="text-center font-bold w-[150px]">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="h-32 text-center text-slate-500">
-                      Belum ada data jenjang perkaderan. Silakan tambahkan baru.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  data.map((item, index) => (
-                    <TableRow key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                      <TableCell className="text-center font-medium">{index + 1}</TableCell>
-                      <TableCell className="font-bold text-slate-700">{item.nama_jenjang}</TableCell>
-                      <TableCell className="text-slate-500">{item.deskripsi || <span className="italic text-slate-400">Tidak ada deskripsi</span>}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
-                            onClick={() => handleOpenEdit(item)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
-                            onClick={() => handleDelete(item.id, item.nama_jenjang)}
-                            disabled={isPending}
-                          >
-                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {isModalOpen && (
-        <PerkaderanModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          data={selectedData} 
-        />
-      )}
     </div>
   )
 }

@@ -1,246 +1,273 @@
-"use client"
+'use client'
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { UserCircle, Activity, CalendarCheck, BookOpen, Fingerprint, Award } from "lucide-react"
+import { User, Activity, GraduationCap, Medal, Calendar, Award, CheckCircle2, TrendingUp, Sparkles } from "lucide-react"
 
-type StudentData = {
-  id: string
-  name: string
-  nis: string
-  class: string
-  is_active: boolean
+export interface ProfileData {
+  name?: string;
+  nis?: string;
+  class?: string;
+  tahun_pelajaran?: string;
+  semester?: string;
 }
 
-type ExculData = {
-  id: string
-  name: string
+export interface AttendanceSummary {
+  hadir?: number;
+  total_meetings?: number;
+  percentage?: number;
 }
 
-type AttendanceRecord = {
-  id: string
-  date: string
-  status: 'hadir' | 'izin' | 'sakit' | 'alpha'
+export interface AssessmentData {
+  score?: number | string;
+  predicate?: string;
+  description?: string;
 }
 
-type AssessmentRecord = {
-  id: string
-  evaluation_date: string
-  score: string
-  description: string
+export interface ExculData {
+  name: string;
+  attendance_summary?: AttendanceSummary;
+  assessment?: AssessmentData;
 }
 
-interface WaliDashboardProps {
-  student: StudentData | null
-  excul: ExculData | null
-  attendances: AttendanceRecord[]
-  assessments: AssessmentRecord[]
+export interface PerkaderanData {
+  jenjang: string;
+  jabatan?: string;
+  status: string;
+  attendance_summary?: AttendanceSummary;
+  assessment?: AssessmentData;
 }
 
-export function WaliDashboardClient({ student, excul, attendances, assessments }: WaliDashboardProps) {
-  
-  if (!student) {
-    return (
-      <div className="flex h-[300px] items-center justify-center bg-white rounded-3xl border border-slate-200 shadow-sm">
-        <div className="text-center space-y-3">
-          <UserCircle className="w-16 h-16 text-slate-300 mx-auto" />
-          <p className="text-slate-600 font-bold text-lg">Data santri tidak ditemukan.</p>
-          <p className="text-slate-400 text-sm">Silakan hubungi administrator sekolah.</p>
-        </div>
-      </div>
-    )
-  }
+export interface AchievementData {
+  nama_lomba: string;
+  penyelenggara?: string;
+  tingkat: string;
+  peringkat: string;
+  tanggal: string;
+}
 
-  // Kalkulasi Statistik Kehadiran
-  const totalPertemuan = attendances.length;
-  const totalHadir = attendances.filter(a => a.status.toLowerCase() === 'hadir').length;
-  const persentaseHadir = totalPertemuan === 0 ? 0 : Math.round((totalHadir / totalPertemuan) * 100);
+export interface DashboardData {
+  profile?: ProfileData;
+  exculs?: ExculData[];
+  perkaderans?: PerkaderanData[];
+  achievements?: AchievementData[];
+}
 
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'hadir': return <Badge className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border-emerald-200 px-3 py-1 rounded-full shadow-none font-bold">Hadir</Badge>
-      case 'izin': return <Badge className="bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 px-3 py-1 rounded-full shadow-none font-bold">Izin</Badge>
-      case 'sakit': return <Badge className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-200 px-3 py-1 rounded-full shadow-none font-bold">Sakit</Badge>
-      case 'alpha': return <Badge className="bg-red-100 hover:bg-red-200 text-red-800 border-red-200 px-3 py-1 rounded-full shadow-none font-bold">Alpha</Badge>
-      default: return <Badge variant="outline" className="px-3 py-1 rounded-full">{status}</Badge>
-    }
-  }
+export default function WaliDashboardClient({ data }: { data: DashboardData }) {
+  const profile = data?.profile || {}
+  const exculs = data?.exculs || []
+  const perkaderans = data?.perkaderans || []
+  const achievements = data?.achievements || []
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
       
-      {/* 1. KARTU PROFIL SANTRI (HERO SECTION) */}
-      <Card className="border-0 shadow-md bg-gradient-to-br from-blue-600 to-indigo-700 overflow-hidden relative">
-        {/* Dekorasi Background */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-20 -mt-20"></div>
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-400 opacity-20 rounded-full blur-2xl -ml-10 -mb-10"></div>
+      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 rounded-[2rem] p-8 md:p-10 text-white shadow-xl shadow-blue-900/20 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
         
-        <CardContent className="p-6 sm:p-8 relative z-10 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-          <div className="flex items-center gap-5">
-            <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 flex items-center justify-center text-white shrink-0">
-              <UserCircle className="w-10 h-10" />
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+          <div className="flex items-center gap-6">
+            <div className="w-24 h-24 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/20 shadow-inner shrink-0">
+              <User className="w-12 h-12 text-white/90" />
             </div>
-            <div className="space-y-1 text-white">
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight">{student.name}</h2>
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm sm:text-base font-medium text-blue-100">
-                <span className="flex items-center gap-1.5 bg-black/10 px-3 py-1 rounded-lg"><Fingerprint className="w-4 h-4" /> NISN: {student.nis}</span>
-                <span className="flex items-center gap-1.5 bg-black/10 px-3 py-1 rounded-lg"><BookOpen className="w-4 h-4" /> Kelas {student.class}</span>
+            <div>
+              <p className="text-blue-200 font-medium tracking-wide text-sm mb-1 uppercase">Profil Siswa</p>
+              <h1 className="text-3xl md:text-4xl font-extrabold mb-3 tracking-tight">{profile.name || "Nama Siswa"}</h1>
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <span className="flex items-center gap-1.5 bg-black/20 backdrop-blur-md px-4 py-1.5 rounded-full font-medium border border-white/10">
+                  NIS: {profile.nis || "-"}
+                </span>
+                <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full font-medium border border-white/10">
+                  Kelas {profile.class || "-"}
+                </span>
               </div>
             </div>
           </div>
           
-          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 flex items-center gap-4 w-full md:w-auto mt-4 md:mt-0">
-            <div className="w-12 h-12 bg-white text-blue-700 rounded-xl flex items-center justify-center shadow-lg shrink-0">
-              <Award className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-blue-100 uppercase tracking-wider mb-0.5">Fokus Ekstrakurikuler</p>
-              <p className="text-lg font-black text-white leading-none">{excul ? excul.name : 'Belum Terdaftar'}</p>
-            </div>
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 px-8 py-5 rounded-3xl text-center min-w-[200px]">
+            <p className="text-xs font-bold text-blue-200 uppercase tracking-widest mb-2">Tahun Ajaran</p>
+            <p className="font-bold text-xl leading-none">{profile.tahun_pelajaran || "Aktif"}</p>
+            <p className="text-sm font-medium text-blue-100 mt-2 bg-black/20 inline-block px-3 py-1 rounded-full">Semester {profile.semester || "Ganjil"}</p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* 2. GRID STATISTIK RINGKAS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-slate-100 rounded-xl text-slate-600 shrink-0"><CalendarCheck className="w-6 h-6"/></div>
-            <div>
-              <p className="text-sm font-bold text-slate-500">Total Pertemuan</p>
-              <p className="text-2xl font-black text-slate-900">{totalPertemuan}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-emerald-100 rounded-xl text-emerald-700 shrink-0"><Activity className="w-6 h-6"/></div>
-            <div>
-              <p className="text-sm font-bold text-slate-500">Hadir Mengikuti</p>
-              <p className="text-2xl font-black text-slate-900">{totalHadir} <span className="text-sm font-medium text-slate-400">kali</span></p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-blue-100 rounded-xl text-blue-700 shrink-0"><Activity className="w-6 h-6"/></div>
-            <div>
-              <p className="text-sm font-bold text-slate-500">Persentase Aktif</p>
-              <p className="text-2xl font-black text-slate-900">{persentaseHadir}%</p>
-            </div>
-          </CardContent>
-        </Card>
+        </div>
       </div>
 
-      {/* 3. TABS DATA PRESENSI & PENILAIAN */}
-      <Tabs defaultValue="presensi" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:w-[400px] bg-slate-100 p-1 rounded-xl">
-          <TabsTrigger value="presensi" className="font-bold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-700 py-2">Riwayat Presensi</TabsTrigger>
-          <TabsTrigger value="penilaian" className="font-bold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-700 py-2">Hasil Evaluasi</TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        
+        <Card className="border-slate-100/60 shadow-sm hover:shadow-md transition-all duration-300 rounded-3xl overflow-hidden bg-white/50 backdrop-blur-sm">
+          <CardHeader className="bg-white border-b border-slate-100 p-6">
+            <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Activity className="w-5 h-5 text-blue-600" />
+              </div>
+              Laporan Ekstrakurikuler
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 bg-white">
+            {exculs.length > 0 ? (
+              <div className="divide-y divide-slate-50">
+                {exculs.map((ex: ExculData, idx: number) => (
+                  <div key={idx} className="p-6 hover:bg-slate-50/50 transition-colors group">
+                    <div className="flex justify-between items-start mb-6">
+                      <h4 className="font-extrabold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{ex.name}</h4>
+                      {ex.assessment?.score ? (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nilai Akhir</span>
+                          <div className="bg-blue-600 text-white font-black px-4 py-1.5 rounded-full text-base shadow-md shadow-blue-600/20 flex items-center gap-2">
+                            {ex.assessment.score} <span className="w-1 h-1 bg-white/50 rounded-full"></span> {ex.assessment.predicate}
+                          </div>
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-slate-400 border-slate-200 font-medium px-3 py-1 rounded-full">Belum dinilai</Badge>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                      <div className="flex-1 text-center">
+                        <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Kehadiran
+                        </p>
+                        <p className="font-black text-slate-800 text-2xl">
+                          {ex.attendance_summary?.hadir || 0}
+                          <span className="text-sm font-medium text-slate-400 ml-1">/ {ex.attendance_summary?.total_meetings || 0}</span>
+                        </p>
+                      </div>
+                      <div className="w-px h-12 bg-slate-200 mx-2"></div>
+                      <div className="flex-1 text-center">
+                        <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                          <TrendingUp className="w-3.5 h-3.5 text-blue-500" /> Persentase
+                        </p>
+                        <p className="font-black text-blue-600 text-2xl">
+                          {ex.attendance_summary?.percentage || 0}%
+                        </p>
+                      </div>
+                    </div>
 
-        <TabsContent value="presensi" className="mt-6">
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-5">
-              <CardTitle className="text-xl text-slate-800">Catatan Kehadiran</CardTitle>
-              <CardDescription className="text-slate-500">Detail rekam jejak kehadiran santri di setiap sesi ekstrakurikuler.</CardDescription>
+                    {ex.assessment?.description && (
+                      <div className="mt-5 bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50 relative">
+                        <Sparkles className="w-4 h-4 text-blue-400 absolute top-4 right-4" />
+                        <p className="text-sm text-slate-600 leading-relaxed font-medium pr-6">
+                          &quot;{ex.assessment.description}&quot;
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center p-16 text-center">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-5 border border-slate-100">
+                  <Activity className="w-8 h-8 text-slate-300" />
+                </div>
+                <h4 className="text-slate-700 font-bold mb-1">Belum Ada Data</h4>
+                <p className="text-slate-500 text-sm">Siswa tidak tercatat mengikuti ekstrakurikuler semester ini.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-8">
+          
+          <Card className="border-slate-100/60 shadow-sm hover:shadow-md transition-all duration-300 rounded-3xl overflow-hidden bg-white/50 backdrop-blur-sm">
+            <CardHeader className="bg-white border-b border-slate-100 p-6">
+              <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5 text-amber-600" />
+                </div>
+                Perkaderan (TKM)
+              </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-              {attendances.length === 0 ? (
-                <div className="p-12 text-center flex flex-col items-center justify-center">
-                  <CalendarCheck className="w-12 h-12 text-slate-200 mb-3" />
-                  <p className="text-slate-500 font-medium">Belum ada data presensi yang dicatat oleh Mentor.</p>
+            <CardContent className="p-0 bg-white">
+              {perkaderans.length > 0 ? (
+                <div className="divide-y divide-slate-50">
+                  {perkaderans.map((pk: PerkaderanData, idx: number) => (
+                    <div key={idx} className="p-6 hover:bg-slate-50/50 transition-colors">
+                      <div className="flex justify-between items-start mb-5">
+                        <div>
+                          <h4 className="font-extrabold text-slate-800 text-lg mb-1">{pk.jenjang}</h4>
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                            <User className="w-3 h-3" /> {pk.jabatan || 'Peserta'}
+                          </span>
+                        </div>
+                        <Badge className="bg-amber-100 text-amber-700 border-amber-200 shadow-none font-bold px-4 py-1.5 rounded-full">
+                          {pk.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex gap-4">
+                        <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex-1 flex flex-col justify-center">
+                          <span className="text-slate-500 text-[10px] uppercase tracking-wider font-bold mb-1">Kehadiran</span>
+                          <span className="font-black text-slate-800 text-2xl">{pk.attendance_summary?.percentage || 0}%</span>
+                        </div>
+                        <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex-1 flex flex-col justify-center">
+                          <span className="text-slate-500 text-[10px] uppercase tracking-wider font-bold mb-1">Predikat</span>
+                          <span className="font-black text-amber-600 text-2xl">{pk.assessment?.predicate || '-'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table className="min-w-[500px]">
-                    <TableHeader className="bg-slate-50">
-                      <TableRow className="hover:bg-transparent border-slate-200">
-                        <TableHead className="font-bold text-slate-700 pl-6 h-14">Tanggal Pertemuan</TableHead>
-                        <TableHead className="font-bold text-slate-700 text-right pr-6 h-14">Status Kehadiran</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {attendances.map((item) => (
-                        <TableRow key={item.id} className="border-slate-100 transition-colors hover:bg-slate-50">
-                          <TableCell className="font-semibold text-slate-700 pl-6 py-4">
-                            {new Date(item.date).toLocaleDateString('id-ID', {
-                                weekday: 'long', 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                            })}
-                          </TableCell>
-                          <TableCell className="text-right pr-6 py-4">{getStatusBadge(item.status)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                    <GraduationCap className="w-6 h-6 text-slate-300" />
+                  </div>
+                  <p className="text-slate-500 text-sm font-medium">Belum ada catatan kepesertaan perkaderan.</p>
                 </div>
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="penilaian" className="mt-6">
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-5">
-              <CardTitle className="text-xl text-slate-800">Evaluasi Pembelajaran</CardTitle>
-              <CardDescription className="text-slate-500">Nilai akhir dan catatan perkembangan dari Mentor pembimbing.</CardDescription>
+          <Card className="border-slate-100/60 shadow-sm hover:shadow-md transition-all duration-300 rounded-3xl overflow-hidden">
+            <CardHeader className="bg-emerald-500 p-6 text-white relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full translate-x-1/3 -translate-y-1/3 blur-2xl"></div>
+              <CardTitle className="text-xl font-bold flex items-center gap-3 relative z-10">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm border border-white/20">
+                  <Medal className="w-5 h-5 text-white" />
+                </div>
+                Riwayat Prestasi
+              </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-               {assessments.length === 0 ? (
-                <div className="p-12 text-center flex flex-col items-center justify-center">
-                  <BookOpen className="w-12 h-12 text-slate-200 mb-3" />
-                  <p className="text-slate-500 font-medium">Belum ada evaluasi atau nilai yang dimasukkan.</p>
+            <CardContent className="p-6 bg-white">
+              {achievements.length > 0 ? (
+                <div className="space-y-4">
+                  {achievements.map((ach: AchievementData, idx: number) => (
+                    <div key={idx} className="flex gap-4 p-5 rounded-2xl border border-slate-100 bg-white hover:border-emerald-200 hover:shadow-md hover:shadow-emerald-100/50 transition-all group">
+                      <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100 group-hover:bg-emerald-500 group-hover:border-emerald-500 transition-colors">
+                        <Award className="w-7 h-7 text-emerald-600 group-hover:text-white transition-colors" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-slate-800 text-base leading-tight mb-1">{ach.nama_lomba}</h4>
+                        <p className="text-xs text-slate-500 font-medium mb-3">{ach.penyelenggara || "-"}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary" className="bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent text-[10px] font-bold px-2 py-0.5 rounded-md">
+                            {ach.tingkat}
+                          </Badge>
+                          <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-transparent text-[10px] font-bold px-2 py-0.5 rounded-md">
+                            Juara {ach.peringkat}
+                          </Badge>
+                          <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 ml-auto">
+                            <Calendar className="w-3.5 h-3.5" /> {new Date(ach.tanggal).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table className="min-w-[600px]">
-                    <TableHeader className="bg-slate-50">
-                      <TableRow className="hover:bg-transparent border-slate-200">
-                        <TableHead className="font-bold text-slate-700 pl-6 h-14 w-[200px]">Tanggal Evaluasi</TableHead>
-                        <TableHead className="font-bold text-slate-700 text-center h-14 w-[120px]">Nilai Akhir</TableHead>
-                        <TableHead className="font-bold text-slate-700 pr-6 h-14">Catatan Mentor</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {assessments.map((item) => (
-                        <TableRow key={item.id} className="border-slate-100 hover:bg-slate-50">
-                          <TableCell className="font-semibold text-slate-700 pl-6 py-5">
-                             {new Date(item.evaluation_date).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
-                          </TableCell>
-                          <TableCell className="text-center py-5">
-                            <span className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 font-black text-xl border-2 border-blue-100">
-                              {item.score}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-slate-600 pr-6 py-5 leading-relaxed font-medium">
-                            {item.description ? (
-                              <span className="bg-white px-4 py-2 rounded-xl border border-slate-200 inline-block w-full">{item.description}</span>
-                            ) : (
-                              <span className="text-slate-400 italic">Tidak ada catatan</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="flex flex-col items-center justify-center p-10 text-center">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                    <Medal className="w-6 h-6 text-slate-300" />
+                  </div>
+                  <p className="text-slate-500 text-sm font-medium">Belum ada riwayat prestasi yang dicatatkan.</p>
                 </div>
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+        
+      </div>
     </div>
   )
 }

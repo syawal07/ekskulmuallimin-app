@@ -22,9 +22,7 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         return Attendance::with('student')
-            ->whereHas('student', function($q) {
-                $q->where('excul_id', $this->exculId);
-            })
+            ->where('excul_id', $this->exculId)
             ->whereDate('date', Carbon::parse($this->date)->toDateString())
             ->get()
             ->sortBy('student.name');
@@ -44,8 +42,8 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping
     public function map($attendance): array
     {
         return [
-            $attendance->student->name,
-            $attendance->student->class,
+            $attendance->student ? $attendance->student->name : '-',
+            $attendance->student ? $attendance->student->class : '-',
             $attendance->status,
             Carbon::parse($attendance->created_at)->format('H:i:s') . ' WIB',
             $attendance->notes ?? '-'

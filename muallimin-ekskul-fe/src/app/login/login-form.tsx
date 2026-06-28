@@ -1,16 +1,15 @@
 'use client'
 
-import { useActionState } from "react"
+import { useState, useActionState } from "react"
 import { loginAction } from "@/actions/authAction";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, ArrowRight } from "lucide-react"
-
-export const dynamic = "force-dynamic"
+import { Loader2, ArrowRight, Eye, EyeOff } from "lucide-react"
 
 export default function LoginForm() {
   const [state, action, isPending] = useActionState(loginAction, null)
+  const [showPassword, setShowPassword] = useState(false)
 
   return (
     <form action={action} className="space-y-6">
@@ -35,14 +34,24 @@ export default function LoginForm() {
           <div className="flex items-center justify-between">
             <Label htmlFor="password" className="text-slate-700 font-bold">Password</Label>
           </div>
-          <Input 
-            id="password" 
-            name="password" 
-            type="password" 
-            placeholder="••••••••" 
-            required 
-            className="h-12 bg-slate-50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl transition-all font-medium placeholder:text-slate-400" 
-          />
+          <div className="relative">
+            <Input 
+              id="password" 
+              name="password" 
+              type={showPassword ? "text" : "password"} 
+              placeholder="••••••••" 
+              required 
+              className="h-12 bg-slate-50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl transition-all font-medium placeholder:text-slate-400 pr-10" 
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </div>
 

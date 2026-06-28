@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('tahun_ajaran');
             $table->string('semester');
             $table->enum('status', ['Aktif', 'Lulus', 'Gagal'])->default('Aktif');
+            $table->string('jabatan')->default('Peserta');
             $table->timestamps();
         });
     }

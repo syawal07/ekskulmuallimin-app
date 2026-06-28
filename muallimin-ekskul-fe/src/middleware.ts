@@ -16,7 +16,8 @@ export function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith('/mentor')) {
-    if (!token || userRole !== 'MENTOR') {
+    // IZINKAN MENTOR DAN PEMBINA MASUK KE RUTE INI
+    if (!token || (userRole !== 'MENTOR' && userRole !== 'PEMBINA')) {
       url.pathname = '/login'
       return NextResponse.redirect(url)
     }
@@ -32,7 +33,8 @@ export function middleware(request: NextRequest) {
   if (pathname === '/login' && token) {
     if (userRole === 'ADMIN') {
       url.pathname = '/admin/dashboard'
-    } else if (userRole === 'MENTOR') {
+    } else if (userRole === 'MENTOR' || userRole === 'PEMBINA') {
+      // ARAHKAN PEMBINA KE DASHBOARD YANG SAMA DENGAN MENTOR
       url.pathname = '/mentor/dashboard'
     } else if (userRole === 'wali') {
       url.pathname = '/wali/dashboard'

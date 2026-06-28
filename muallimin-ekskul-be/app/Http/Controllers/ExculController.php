@@ -21,12 +21,12 @@ class ExculController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'location' => 'required|string'
+            'location' => 'nullable|in:INDUK,TERPADU'
         ]);
 
         $excul = Excul::create([
             'name' => $request->name,
-            'location' => $request->location
+            'location' => $request->location ?? 'INDUK'
         ]);
 
         return response()->json([
@@ -38,7 +38,8 @@ class ExculController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'name' => 'required|string|max:255'
+            'name' => 'required|string|max:255',
+            'location' => 'nullable|in:INDUK,TERPADU'
         ]);
 
         $excul = Excul::find($id);
@@ -51,7 +52,8 @@ class ExculController extends Controller
         }
 
         $excul->update([
-            'name' => $request->name
+            'name' => $request->name,
+            'location' => $request->location ?? $excul->location
         ]);
 
         return response()->json([

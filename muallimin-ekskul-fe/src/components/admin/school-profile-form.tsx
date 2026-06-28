@@ -40,7 +40,8 @@ function SaveButton({ loading }: { loading: boolean }) {
   )
 }
 
-export default function SchoolProfileForm({ initialData }: { initialData: CompanyProfile }) {
+export default function SchoolProfileForm({ initialData = {} }: { initialData?: CompanyProfile | null }) {
+  const data = initialData || {}
   const [loading, setLoading] = useState(false)
 
   const getImageUrl = (path?: string | null) => {
@@ -89,7 +90,6 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
 
   return (
     <Tabs defaultValue="branding" className="w-full space-y-6">
-      
       <div className="flex items-center justify-between">
          <TabsList className="grid w-full max-w-2xl grid-cols-4 h-auto p-1 bg-slate-100">
             <TabsTrigger value="branding" className="py-2">Identitas</TabsTrigger>
@@ -109,13 +109,13 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Nama Sekolah</Label>
-                <Input name="school_name" defaultValue={initialData.school_name || ""} required />
+                <Input name="school_name" defaultValue={data.school_name || ""} required />
               </div>
               <div className="space-y-2">
                 <Label>Logo Sekolah</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center bg-slate-50 hover:bg-slate-100 transition">
-                  {initialData.logo_url && (
-                    <img src={getImageUrl(initialData.logo_url)} alt="Logo" className="h-16 mx-auto mb-2 object-contain" />
+                  {data.logo_url && (
+                    <img src={getImageUrl(data.logo_url)} alt="Logo" className="h-16 mx-auto mb-2 object-contain" />
                   )}
                   <input 
                     type="file" 
@@ -144,22 +144,22 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Judul Besar</Label>
-                  <Input name="hero_title" defaultValue={initialData.hero_title || ""} />
+                  <Input name="hero_title" defaultValue={data.hero_title || ""} />
                 </div>
                 <div className="space-y-2">
                   <Label>Sub-Judul</Label>
-                  <Input name="hero_subtitle" defaultValue={initialData.hero_subtitle || ""} />
+                  <Input name="hero_subtitle" defaultValue={data.hero_subtitle || ""} />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Deskripsi Singkat</Label>
-                <textarea name="hero_description" defaultValue={initialData.hero_description || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                <textarea name="hero_description" defaultValue={data.hero_description || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
               <div className="space-y-2">
                 <Label>Foto Banner (Background)</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center bg-slate-50">
-                  {initialData.hero_image_url && (
-                    <img src={getImageUrl(initialData.hero_image_url)} alt="Hero" className="h-32 mx-auto mb-2 object-cover rounded-md" />
+                  {data.hero_image_url && (
+                    <img src={getImageUrl(data.hero_image_url)} alt="Hero" className="h-32 mx-auto mb-2 object-cover rounded-md" />
                   )}
                   <input 
                     type="file" 
@@ -173,7 +173,7 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
               </div>
               <div className="space-y-2">
                 <Label>Tentang Sekolah</Label>
-                <textarea name="about_text" defaultValue={initialData.about_text || ""} className="flex min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                <textarea name="about_text" defaultValue={data.about_text || ""} className="flex min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
               <SaveButton loading={loading} />
             </CardContent>
@@ -192,8 +192,8 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
               <div className="space-y-2">
                 <Label>Gambar Background</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center bg-slate-50">
-                  {initialData.login_image_url && (
-                    <img src={getImageUrl(initialData.login_image_url)} alt="Login Bg" className="h-40 w-full mx-auto mb-2 object-cover rounded-md opacity-80" />
+                  {data.login_image_url && (
+                    <img src={getImageUrl(data.login_image_url)} alt="Login Bg" className="h-40 w-full mx-auto mb-2 object-cover rounded-md opacity-80" />
                   )}
                   <input 
                     type="file" 
@@ -207,11 +207,11 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
               </div>
               <div className="space-y-2">
                 <Label>Kutipan Motivasi</Label>
-                <textarea name="login_quote" defaultValue={initialData.login_quote || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                <textarea name="login_quote" defaultValue={data.login_quote || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
               <div className="space-y-2">
                 <Label>Tokoh / Penulis</Label>
-                <Input name="login_quote_author" defaultValue={initialData.login_quote_author || ""} />
+                <Input name="login_quote_author" defaultValue={data.login_quote_author || ""} />
               </div>
               <SaveButton loading={loading} />
             </CardContent>
@@ -230,27 +230,26 @@ export default function SchoolProfileForm({ initialData }: { initialData: Compan
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Telepon / WA</Label>
-                  <Input name="phone" defaultValue={initialData.phone || ""} />
+                  <Input name="phone" defaultValue={data.phone || ""} />
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>
-                  <Input name="email" defaultValue={initialData.email || ""} type="email" />
+                  <Input name="email" defaultValue={data.email || ""} type="email" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Website URL</Label>
-                <Input name="website" defaultValue={initialData.website || ""} />
+                <Input name="website" defaultValue={data.website || ""} />
               </div>
               <div className="space-y-2">
                 <Label>Alamat Lengkap</Label>
-                <textarea name="address" defaultValue={initialData.address || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                <textarea name="address" defaultValue={data.address || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
               <SaveButton loading={loading} />
             </CardContent>
           </Card>
         </form>
       </TabsContent>
-
     </Tabs>
   )
 }

@@ -39,18 +39,29 @@ class StudentController extends Controller
             });
         }
 
+        if ($request->has('kelas') && $request->kelas != '') {
+            $query->where('class', $request->kelas);
+        }
+
         if ($request->has('status_aktif') && $request->status_aktif != '') {
             $query->where('is_active', filter_var($request->status_aktif, FILTER_VALIDATE_BOOLEAN));
         }
 
-        $students = $query->orderBy('name', 'asc')->paginate(10);
+        $limit = $request->query('limit', 10);
+        $students = $query->orderBy('name', 'asc')->paginate($limit);
+
+        $availableClasses = Student::select('class')
+            ->distinct()
+            ->whereNotNull('class')
+            ->orderBy('class')
+            ->pluck('class');
 
         return response()->json([
             'success' => true,
-            'data' => $students
+            'data' => $students,
+            'classes' => $availableClasses
         ], 200);
     }
-
     public function show($id)
     {
         $activeYear = AcademicYear::where('is_active', true)->first();
@@ -208,16 +219,19 @@ class StudentController extends Controller
                 'jenis_kelamin' => $request->jenis_kelamin,
                 'angkatan' => $request->angkatan,
                 'jabatan_organisasi' => $request->jabatan_organisasi,
-                'is_active' => $request->has('is_active') ? $request->is_active : $student->is_active,
+                'is_active' => $request->has('is_active') ? filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN) : $student->is_active,
                 'foto' => $fotoName,
             ]);
 
+            // Soft-sync ekskul (Hanya memengaruhi ekskul di tahun ajaran aktif, membiarkan histori lama)
+            $student->exculs()->wherePivot('academic_year_id', $activeYear->id)->detach();
             $syncData = [];
             foreach ($request->excul_id as $exculId) {
                 $syncData[$exculId] = ['academic_year_id' => $activeYear->id, 'is_active' => true];
             }
-            $student->exculs()->wherePivot('academic_year_id', $activeYear->id)->sync($syncData);
+            $student->exculs()->attach($syncData);
 
+            // Sync Perkaderan
             if ($request->has('perkaderan_ids') && is_array($request->perkaderan_ids)) {
                 
                 PerkaderanStudent::where('student_id', $student->id)
@@ -292,7 +306,7 @@ class StudentController extends Controller
         ], 200);
     }
 
-    public function import(Request $request)
+   public function import(Request $request)
     {
         $request->validate([
             'students' => 'required|array'
@@ -316,19 +330,30 @@ class StudentController extends Controller
                     continue;
                 }
 
+                // Logika Anti-Double: Cari berdasarkan NIS, jika kosong cari berdasarkan Nama & Kelas
+                $matchThese = [];
+                if (!empty($data['nis'])) {
+                    $matchThese['nis'] = $data['nis'];
+                } else {
+                    $matchThese['name'] = $data['name'];
+                    $matchThese['class'] = $data['class'];
+                }
+
+                $student = Student::updateOrCreate(
+                    $matchThese,
+                    [
+                        'name' => $data['name'],
+                        'class' => $data['class'],
+                        'nisn' => $data['nisn'] ?? null,
+                        'jenis_kelamin' => $data['jenis_kelamin'] ?? null,
+                        'angkatan' => $data['angkatan'] ?? null,
+                        'jabatan_organisasi' => $data['jabatan_organisasi'] ?? null,
+                        'is_active' => true
+                    ]
+                );
+
                 $exculNamesArray = array_map('trim', explode(',', $data['exculName']));
                 $perkaderanNamesArray = isset($data['perkaderanName']) && $data['perkaderanName'] != '' ? array_map('trim', explode(',', $data['perkaderanName'])) : [];
-
-                $student = Student::create([
-                    'name' => $data['name'],
-                    'class' => $data['class'],
-                    'nis' => $data['nis'] ?? null,
-                    'nisn' => $data['nisn'] ?? null,
-                    'jenis_kelamin' => $data['jenis_kelamin'] ?? null,
-                    'angkatan' => $data['angkatan'] ?? null,
-                    'jabatan_organisasi' => $data['jabatan_organisasi'] ?? null,
-                    'is_active' => true
-                ]);
 
                 $syncData = [];
                 foreach ($exculNamesArray as $exName) {
@@ -341,32 +366,30 @@ class StudentController extends Controller
                 }
                 
                 if (count($syncData) > 0) {
-                    $student->exculs()->attach($syncData);
+                    // Gunakan syncWithoutDetaching agar ekskul sebelumnya tidak hilang
+                    $student->exculs()->syncWithoutDetaching($syncData);
                 }
 
                 if (count($perkaderanNamesArray) > 0) {
-                    $pkInsertData = [];
                     foreach($perkaderanNamesArray as $pkName) {
                         $pk = $allPerkaderans->first(function($item) use ($pkName) {
                             return strtolower(trim($item->nama_jenjang)) === strtolower($pkName);
                         });
 
                         if($pk) {
-                            $pkInsertData[] = [
-                                'student_id' => $student->id,
-                                'perkaderan_id' => $pk->id,
-                                'tahun_ajaran' => $activeYear->name,
-                                'semester' => $activeYear->semester,
-                                'status' => 'Aktif',
-                                'jabatan' => $data['jabatan_perkaderan'] ?? 'Peserta',
-                                'created_at' => now(),
-                                'updated_at' => now()
-                            ];
+                            PerkaderanStudent::updateOrCreate(
+                                [
+                                    'student_id' => $student->id,
+                                    'perkaderan_id' => $pk->id,
+                                    'tahun_ajaran' => $activeYear->name,
+                                ],
+                                [
+                                    'semester' => $activeYear->semester,
+                                    'status' => 'Aktif',
+                                    'jabatan' => $data['jabatan_perkaderan'] ?? 'Peserta'
+                                ]
+                            );
                         }
-                    }
-
-                    if (count($pkInsertData) > 0) {
-                        PerkaderanStudent::insert($pkInsertData);
                     }
                 }
 
@@ -380,7 +403,7 @@ class StudentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Berhasil import siswa',
+            'message' => 'Berhasil import/update siswa',
             'data' => ['count' => $insertedCount]
         ], 201);
     }

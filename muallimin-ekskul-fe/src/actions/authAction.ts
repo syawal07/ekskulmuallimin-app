@@ -36,8 +36,6 @@ export async function loginAction(prevState: unknown, formData: FormData) {
     const role = result.data.user.role;
     const name = result.data.user.name;
     const uname = result.data.user.username;
-    const isMentorEkskul = result.data.user.is_mentor_ekskul;
-    const isMentorPerkaderan = result.data.user.is_mentor_perkaderan;
 
     const cookieStore = await cookies();
     const cookieOptions = { 
@@ -50,19 +48,16 @@ export async function loginAction(prevState: unknown, formData: FormData) {
     cookieStore.set("user_name", name, cookieOptions);
     cookieStore.set("user_username", uname, cookieOptions);
     
-    if (role === "MENTOR") {
-      cookieStore.set("is_mentor_ekskul", String(isMentorEkskul), cookieOptions);
-      cookieStore.set("is_mentor_perkaderan", String(isMentorPerkaderan), cookieOptions);
-    }
-    
     await createSession(token, role);
 
     if (role === "ADMIN") {
       targetUrl = "/admin/dashboard";
-    } else if (role === "MENTOR") {
+    } else if (role === "MENTOR" || role === "PEMBINA") {
       targetUrl = "/mentor/dashboard";
     } else if (role === "wali") {
       targetUrl = "/wali/dashboard";
+    } else {
+      return { error: "Akses ditolak: Role akun tidak dikenali." };
     }
 
   } catch (error) {

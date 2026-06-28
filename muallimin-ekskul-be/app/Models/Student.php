@@ -10,7 +10,17 @@ class Student extends Authenticatable
 {
     use HasApiTokens, HasUuids;
 
-    protected $fillable = ['name', 'nis', 'class', 'is_active'];
+    protected $fillable = [
+        'name', 
+        'nis', 
+        'nisn', 
+        'class', 
+        'jenis_kelamin', 
+        'angkatan', 
+        'jabatan_organisasi', 
+        'foto', 
+        'is_active'
+    ];
 
     protected $casts = [
         'is_active' => 'boolean',

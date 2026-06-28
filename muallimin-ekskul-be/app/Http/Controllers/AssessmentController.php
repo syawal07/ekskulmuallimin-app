@@ -8,24 +8,32 @@ use App\Imports\AssessmentImport;
 use App\Models\Assessment;
 use App\Models\Student;
 use App\Models\AcademicYear;
+use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AssessmentController extends Controller
 {
     public function downloadTemplate(Request $request)
     {
-        $exculId = $request->query('excul_id');
+        $exculId = $request->query('excul_id') ?? $request->query('exculId');
+        $kelas = $request->query('kelas');
 
         if (!$exculId) {
             return response()->json(['success' => false, 'message' => 'Excul ID required'], 400);
         }
 
-        $fileName = 'Template_Nilai_Ekskul_' . time() . '.xlsx';
-        return Excel::download(new AssessmentTemplateExport($exculId), $fileName);
+        $namaKelas = $kelas ? '_Kelas_' . str_replace(' ', '', $kelas) : '_Semua_Kelas';
+        $fileName = 'Template_Nilai_Ekskul' . $namaKelas . '_' . time() . '.xlsx';
+        
+        return Excel::download(new AssessmentTemplateExport($exculId, $kelas), $fileName);
     }
 
     public function importExcel(Request $request)
     {
+        if ($request->has('exculId')) {
+            $request->merge(['excul_id' => $request->exculId]);
+        }
+
         $request->validate([
             'excul_id' => 'required|uuid',
             'file' => 'required|mimes:xlsx,xls'
@@ -47,13 +55,14 @@ class AssessmentController extends Controller
 
     public function index(Request $request)
     {
-        $exculId = $request->query('excul_id');
+        $exculId = $request->query('excul_id') ?? $request->query('exculId');
         $activeYear = AcademicYear::where('is_active', true)->first();
         
         $query = Assessment::with('student')
             ->where('mentor_id', $request->user()->id);
 
-        if ($activeYear) {
+        $assessmentHasYear = Schema::hasColumn('assessments', 'academic_year_id');
+        if ($activeYear && $assessmentHasYear) {
             $query->where('academic_year_id', $activeYear->id);
         }
 
@@ -63,26 +72,36 @@ class AssessmentController extends Controller
 
         $assessments = $query->get()->sortBy('student.name')->values();
 
-        // INOVASI: Optimasi Database Engine (Lebih Ringan dari WHERE NOT IN PHP)
         $missingQuery = Student::where('is_active', true);
         
         if ($exculId && $activeYear) {
             $missingQuery->whereHas('exculs', function($q) use ($exculId, $activeYear) {
                 $q->where('excul_student.excul_id', $exculId)
                   ->where('excul_student.academic_year_id', $activeYear->id);
-            })->whereDoesntHave('assessments', function($q) use ($exculId, $activeYear) {
-                $q->where('excul_id', $exculId)
-                  ->where('academic_year_id', $activeYear->id);
+            })->whereDoesntHave('assessments', function($q) use ($exculId, $activeYear, $assessmentHasYear) {
+                $q->where('excul_id', $exculId);
+                if ($assessmentHasYear) {
+                    $q->where('academic_year_id', $activeYear->id);
+                }
             });
         }
 
         $missingStudents = $missingQuery->orderBy('name')->get(['id', 'name', 'class']);
 
+        $availableClasses = collect();
+        if ($exculId && $activeYear) {
+            $availableClasses = Student::whereHas('exculs', function($q) use ($exculId, $activeYear) {
+                $q->where('excul_student.excul_id', $exculId)
+                  ->where('excul_student.academic_year_id', $activeYear->id);
+            })->where('is_active', true)->select('class')->distinct()->orderBy('class')->pluck('class');
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
                 'assessments' => $assessments,
-                'missing_students' => $missingStudents
+                'missing_students' => $missingStudents,
+                'classes' => $availableClasses
             ]
         ], 200);
     }

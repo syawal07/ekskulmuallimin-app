@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('exculs', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->enum('location', ['INDUK', 'TERPADU']);
+            $table->enum('location', ['INDUK', 'TERPADU'])->default('INDUK');
             $table->timestamps();
         });
     }
