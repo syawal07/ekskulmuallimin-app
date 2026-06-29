@@ -20,6 +20,6 @@ class Perkaderan extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class, 'perkaderan_user');
+        return $this->belongsToMany(User::class, 'perkaderan_user', 'perkaderan_id', 'user_id');
     }
 }
