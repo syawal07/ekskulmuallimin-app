@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Excul;
-use App\Models\Perkaderan;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\Attendance;
@@ -16,7 +15,6 @@ class DashboardController extends Controller
         $totalSiswa = Student::where('is_active', true)->count();
         $totalGuru = User::where('role', 'MENTOR')->count();
         $totalEkskul = Excul::count();
-        $totalPerkaderan = Perkaderan::count();
         
         $today = Carbon::today();
         $presensiHariIni = Attendance::whereDate('date', '>=', $today)->count();
@@ -27,7 +25,6 @@ class DashboardController extends Controller
                 'totalSiswa' => $totalSiswa,
                 'totalGuru' => $totalGuru,
                 'totalEkskul' => $totalEkskul,
-                'totalPerkaderan' => $totalPerkaderan,
                 'presensiHariIni' => $presensiHariIni
             ]
         ], 200);

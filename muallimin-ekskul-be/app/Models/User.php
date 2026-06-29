@@ -10,6 +10,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
+    // HasApiTokens untuk fitur Login API nanti
     use HasApiTokens, HasFactory, Notifiable, HasUuids;
 
     protected $fillable = [
@@ -31,18 +32,20 @@ class User extends Authenticatable
         ];
     }
 
+    // Relasi: Guru mengampu ekskul apa saja (Many-to-Many via excul_user)
     public function mentoringExculs()
     {
         return $this->belongsToMany(Excul::class, 'excul_user', 'user_id', 'excul_id');
     }
 
+    // Relasi: Presensi yang dicatat oleh user ini
     public function recordedAttendances()
     {
         return $this->hasMany(Attendance::class, 'recorder_id');
     }
 
     public function perkaderans()
-    {
-        return $this->belongsToMany(Perkaderan::class, 'perkaderan_user', 'user_id', 'perkaderan_id');
-    }
+{
+    return $this->belongsToMany(Perkaderan::class, 'perkaderan_user');
+}
 }
