@@ -14,11 +14,8 @@ class WaliController extends Controller
         try {
             $activeYear = AcademicYear::where('is_active', true)->first();
             
-            // KUNCI PERBAIKAN: Karena yang login adalah "Siswa", maka $request->user() adalah model Student.
-            // Kita bisa langsung mengambil ID-nya.
             $studentId = $request->user()->id;
 
-            // Cek apakah tabel memiliki kolom academic_year_id untuk mencegah error SQL
             $attendanceHasYear = Schema::hasColumn('attendances', 'academic_year_id');
             $assessmentHasYear = Schema::hasColumn('assessments', 'academic_year_id');
 
@@ -34,8 +31,11 @@ class WaliController extends Controller
                 },
                 'perkaderans' => function($q) use ($activeYear) {
                     if ($activeYear) $q->where('tahun_ajaran', $activeYear->name);
+                    $q->orderBy('updated_at', 'desc');
                 },
                 'perkaderans.perkaderan',
+                'perkaderans.attendances',
+                'perkaderans.assessments',
                 'achievements'
             ])->find($studentId);
 
@@ -57,7 +57,11 @@ class WaliController extends Controller
 
             $exculsData = $student->exculs->map(function($excul) use ($student) {
                 $exculAttendances = $student->attendances->where('excul_id', $excul->id);
-                $hadir = $exculAttendances->where('status', 'HADIR')->count();
+                
+                $hadir = $exculAttendances->filter(function($att) {
+                    return strtoupper($att->status) === 'HADIR';
+                })->count();
+                
                 $total = $exculAttendances->count();
                 $persentase = $total > 0 ? round(($hadir / $total) * 100) : 0;
                 $assessment = $student->assessments->where('excul_id', $excul->id)->first();
@@ -79,12 +83,16 @@ class WaliController extends Controller
             });
 
             $perkaderanData = $student->perkaderans->map(function($pkStudent) {
-                $pkAttendances = method_exists($pkStudent, 'attendances') ? $pkStudent->attendances : collect();
-                $pkHadir = $pkAttendances->where('status', 'HADIR')->count();
+                $pkAttendances = $pkStudent->attendances ?? collect();
+                
+                $pkHadir = $pkAttendances->filter(function($att) {
+                    return strtoupper($att->status) === 'HADIR';
+                })->count();
+                
                 $pkTotal = $pkAttendances->count();
                 $pkPersentase = $pkTotal > 0 ? round(($pkHadir / $pkTotal) * 100) : 0;
 
-                $pkAssessment = method_exists($pkStudent, 'assessments') ? $pkStudent->assessments->first() : null;
+                $pkAssessment = $pkStudent->assessments->first();
 
                 return [
                     'jenjang' => $pkStudent->perkaderan ? $pkStudent->perkaderan->nama_jenjang : '-',
@@ -118,7 +126,7 @@ class WaliController extends Controller
     public function attendances(Request $request)
     {
         $activeYear = AcademicYear::where('is_active', true)->first();
-        $student = $request->user(); // Sudah langsung model Student
+        $student = $request->user();
         
         $query = $student->attendances()->with('excul')->orderBy('date', 'desc');
         
@@ -130,9 +138,12 @@ class WaliController extends Controller
         $exculAttendances = $query->get();
 
         $pkAttendances = collect();
-        $studentPks = $student->perkaderans;
+        $studentPks = $student->perkaderans()->orderBy('updated_at', 'desc')->get();
+        
         foreach ($studentPks as $pkStudent) {
-             $pkAttendances = method_exists($pkStudent, 'attendances') ? $pkAttendances->merge($pkStudent->attendances()->with('perkaderan')->get()) : $pkAttendances;
+            if (method_exists($pkStudent, 'attendances')) {
+                $pkAttendances = $pkAttendances->merge($pkStudent->attendances()->with('perkaderan')->get());
+            }
         }
 
         return response()->json([
@@ -147,7 +158,7 @@ class WaliController extends Controller
     public function assessments(Request $request)
     {
         $activeYear = AcademicYear::where('is_active', true)->first();
-        $student = $request->user(); // Sudah langsung model Student
+        $student = $request->user();
         
         $query = $student->assessments()->with(['excul', 'mentor'])->orderBy('created_at', 'desc');
         
@@ -159,9 +170,12 @@ class WaliController extends Controller
         $exculAssessments = $query->get();
 
         $pkAssessments = collect();
-        $studentPks = $student->perkaderans;
+        $studentPks = $student->perkaderans()->orderBy('updated_at', 'desc')->get();
+        
         foreach ($studentPks as $pkStudent) {
-             $pkAssessments = method_exists($pkStudent, 'assessments') ? $pkAssessments->merge($pkStudent->assessments()->get()) : $pkAssessments;
+            if (method_exists($pkStudent, 'assessments')) {
+                $pkAssessments = $pkAssessments->merge($pkStudent->assessments()->get());
+            }
         }
 
         return response()->json([
