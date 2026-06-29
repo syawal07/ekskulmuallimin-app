@@ -7,7 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Edit, Plus } from "lucide-react"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Edit, Plus, Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 import SubmitButton from "./submit-button"
 
 export interface StudentData {
@@ -34,9 +37,10 @@ export default function PrestasiModal({
   students: StudentData[]; 
 }) {
   const [open, setOpen] = useState(false)
+  const [openCombobox, setOpenCombobox] = useState(false)
   const isEdit = !!initialData
   
-  const [selectedStudent, setSelectedStudent] = useState<string>(initialData?.student_id || "")
+  const [selectedStudent, setSelectedStudent] = useState<string>(initialData?.student_id?.toString() || "")
 
   const action = isEdit && initialData ? updateAchievement.bind(null, initialData.id.toString()) : createAchievement
   const [state, formAction] = useActionState(action, null)
@@ -50,6 +54,8 @@ export default function PrestasiModal({
       return () => clearTimeout(timer)
     }
   }, [state?.success, isEdit])
+
+  const selectedStudentData = students.find((s) => s.id.toString() === selectedStudent)
 
   return (
     <Dialog open={open} onOpenChange={(val) => {
@@ -82,20 +88,51 @@ export default function PrestasiModal({
 
           <input type="hidden" name="student_id" value={selectedStudent} />
 
-          <div className="space-y-2">
+          <div className="space-y-2 flex flex-col">
             <Label>Pilih Santri</Label>
-            <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="-- Ketik / Pilih Nama Santri --" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {students.map((s: StudentData) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name} - Kelas {s.class}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCombobox}
+                  className="w-full justify-between font-normal bg-white"
+                >
+                  {selectedStudentData
+                    ? `${selectedStudentData.name} - Kelas ${selectedStudentData.class}`
+                    : "-- Ketik / Cari Nama Santri --"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[460px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Ketik nama santri untuk mencari..." />
+                  <CommandList>
+                    <CommandEmpty>Nama santri tidak ditemukan.</CommandEmpty>
+                    <CommandGroup>
+                      {students.map((s: StudentData) => (
+                        <CommandItem
+                          key={s.id}
+                          value={`${s.name} ${s.class} ${s.id}`}
+                          onSelect={() => {
+                            setSelectedStudent(s.id.toString())
+                            setOpenCombobox(false)
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedStudent === s.id.toString() ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {s.name} - Kelas {s.class}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">

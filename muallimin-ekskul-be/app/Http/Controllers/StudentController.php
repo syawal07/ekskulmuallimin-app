@@ -169,7 +169,7 @@ class StudentController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+public function update(Request $request, $id)
     {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -223,7 +223,6 @@ class StudentController extends Controller
                 'foto' => $fotoName,
             ]);
 
-            // Soft-sync ekskul (Hanya memengaruhi ekskul di tahun ajaran aktif, membiarkan histori lama)
             $student->exculs()->wherePivot('academic_year_id', $activeYear->id)->detach();
             $syncData = [];
             foreach ($request->excul_id as $exculId) {
@@ -231,51 +230,30 @@ class StudentController extends Controller
             }
             $student->exculs()->attach($syncData);
 
-            // Sync Perkaderan
             if ($request->has('perkaderan_ids') && is_array($request->perkaderan_ids)) {
-                
                 PerkaderanStudent::where('student_id', $student->id)
                     ->where('tahun_ajaran', $activeYear->name)
                     ->whereNotIn('perkaderan_id', $request->perkaderan_ids)
-                    ->update(['status' => 'Pindah']);
+                    ->delete();
 
-                $existingPk = PerkaderanStudent::where('student_id', $student->id)
-                    ->where('tahun_ajaran', $activeYear->name)
-                    ->pluck('perkaderan_id')
-                    ->toArray();
-
-                $newPkData = [];
                 foreach ($request->perkaderan_ids as $pkId) {
-                    if (!in_array($pkId, $existingPk)) {
-                        $newPkData[] = [
+                    PerkaderanStudent::updateOrCreate(
+                        [
                             'student_id' => $student->id,
                             'perkaderan_id' => $pkId,
                             'tahun_ajaran' => $activeYear->name,
+                        ],
+                        [
                             'semester' => $activeYear->semester,
                             'status' => 'Aktif',
-                            'jabatan' => $request->jabatan_perkaderan ?? 'Peserta',
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
-                    } else {
-                        PerkaderanStudent::where('student_id', $student->id)
-                            ->where('perkaderan_id', $pkId)
-                            ->where('tahun_ajaran', $activeYear->name)
-                            ->update([
-                                'status' => 'Aktif',
-                                'jabatan' => $request->jabatan_perkaderan ?? 'Peserta'
-                            ]);
-                    }
+                            'jabatan' => $request->jabatan_perkaderan ?? 'Peserta'
+                        ]
+                    );
                 }
-
-                if (count($newPkData) > 0) {
-                    PerkaderanStudent::insert($newPkData);
-                }
-
             } else {
                 PerkaderanStudent::where('student_id', $student->id)
                     ->where('tahun_ajaran', $activeYear->name)
-                    ->update(['status' => 'Pindah']);
+                    ->delete();
             }
 
             DB::commit();
@@ -406,5 +384,17 @@ class StudentController extends Controller
             'message' => 'Berhasil import/update siswa',
             'data' => ['count' => $insertedCount]
         ], 201);
+    }
+    public function getStudentList(Request $request)
+    {
+        $students = Student::where('is_active', true)
+            ->orderBy('name', 'asc')
+            ->select('id', 'name', 'class')
+            ->get();
+            
+        return response()->json([
+            'success' => true,
+            'data' => $students
+        ], 200);
     }
 }

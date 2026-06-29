@@ -45,13 +45,13 @@ async function getStudents() {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
     const token = await getToken();
-    const res = await fetch(`${apiUrl}/admin/students?limit=1000`, {
+    const res = await fetch(`${apiUrl}/admin/students-list`, {
       headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
       cache: 'no-store'
     });
     if (!res.ok) return [];
     const result = await res.json();
-    return result.data.data || [];
+    return result.data || [];
   } catch (e) {
     return [];
   }

@@ -126,6 +126,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/achievements', [AchievementController::class, 'store']);
     Route::put('/admin/achievements/{id}', [AchievementController::class, 'update']);
     Route::delete('/admin/achievements/{id}', [AchievementController::class, 'destroy']);
+    Route::get('/admin/students-list', [StudentController::class, 'getStudentList']);
 
 
     // =====================================================================
