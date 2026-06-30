@@ -113,14 +113,13 @@ public function getDashboard(Request $request)
         DB::beginTransaction();
         try {
             $allInputs = $request->all();
+            $processedCount = 0;
             
             foreach ($allInputs as $key => $status) {
                 if (str_starts_with($key, 'status-')) {
                     $psId = str_replace('status-', '', $key);
                     $keterangan = $request->input("notes-{$psId}", '');
 
-                    // --- KUNCI PENYELESAIAN ERROR TRUNCATED ---
-                    // Mengubah 'ALPHA' menjadi 'ALPA' agar sesuai dengan ENUM database bahasa Indonesia
                     $statusFix = strtoupper($status);
                     if ($statusFix === 'ALPHA') {
                         $statusFix = 'ALPA'; 
@@ -145,7 +144,17 @@ public function getDashboard(Request $request)
                             'keterangan' => $keteranganFinal
                         ]);
                     }
+                    
+                    $processedCount++;
                 }
+            }
+            
+            if ($processedCount === 0) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Tidak ada data presensi santri yang valid untuk disimpan.'
+                ], 400);
             }
             
             DB::commit();

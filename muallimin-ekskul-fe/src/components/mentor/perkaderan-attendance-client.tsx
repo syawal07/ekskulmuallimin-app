@@ -70,18 +70,20 @@ export default function PerkaderanAttendanceClient({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
-    const finalAttendanceData: Record<string, AttendanceState> = {}
-    
-    students.forEach(s => {
-      const studentId = s.id.toString()
-      finalAttendanceData[studentId] = attendanceData[studentId] || { status: 'HADIR', notes: '' }
-    })
 
     const safePayload = new FormData()
     safePayload.append("perkaderanId", selectedPerkaderanId!)
     safePayload.append("date", tanggal)
-    safePayload.append("attendance_data", JSON.stringify(finalAttendanceData))
+    
+    students.forEach(s => {
+      const studentId = s.id.toString()
+      const data = attendanceData[studentId] || { status: 'HADIR', notes: '' }
+      
+      safePayload.append(`status-${studentId}`, data.status)
+      if (data.notes) {
+        safePayload.append(`notes-${studentId}`, data.notes)
+      }
+    })
 
     const result = await submitPerkaderanAttendance(safePayload)
     

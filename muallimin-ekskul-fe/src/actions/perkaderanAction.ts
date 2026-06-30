@@ -163,15 +163,18 @@ export async function submitPerkaderanAttendance(formData: FormData) {
       body: formData,
     })
 
-const result = await response.json()
+    const result = await response.json()
     if (!response.ok || !result.success) {
       return { error: result.message || "Gagal menyimpan presensi" }
     }
+    
     revalidatePath("/mentor/dashboard")
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/perkaderan/monitoring")
     revalidatePath("/mentor/perkaderan/presensi")
     revalidatePath("/mentor/perkaderan/riwayat")
+    revalidatePath("/wali/dashboard")
+    revalidatePath("/wali/attendances")
     
     return { success: true }
   } catch (error) {
