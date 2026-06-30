@@ -18,7 +18,6 @@ async function getWaliData() {
 
     const dashboardRes = await fetch(`${apiUrl}/wali/dashboard`, { headers, cache: 'no-store' });
     
-    // Jika tidak OK (404 atau 500), tangkap pesan error asli dari Backend!
     if (!dashboardRes.ok) {
       const errData = await dashboardRes.json().catch(() => ({ message: "Gagal memuat API dari Server." }));
       return { error: errData.message || `Error Kode: ${dashboardRes.status}` };
@@ -43,16 +42,22 @@ export default async function WaliDashboardPage() {
 
   if (data?.error) {
     return (
-      <div className="p-8 max-w-4xl mx-auto mt-10">
-        <div className="bg-red-50 text-red-700 p-6 rounded-2xl border border-red-200 shadow-sm animate-in fade-in zoom-in duration-300">
-          <h2 className="text-xl font-black mb-2 flex items-center gap-2">
-            ⚠️ Perhatian
+      <div className="p-4 md:p-8 max-w-3xl mx-auto mt-12 animate-in fade-in zoom-in-95 duration-500">
+        <div className="bg-red-500/5 backdrop-blur-xl text-red-900 p-6 md:p-8 rounded-[2rem] border border-red-500/20 shadow-[0_12px_40px_rgba(239,68,68,0.06)] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+          
+          <h2 className="text-xl font-extrabold mb-4 flex items-center gap-3 text-red-700 tracking-tight">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm">
+              ⚠️
+            </span>
+            Perhatian
           </h2>
-          <p className="font-medium">{data.error}</p>
-          <div className="mt-4 pt-4 border-t border-red-200/50">
-            <p className="text-sm text-red-600/80">
-              Tips: Jika data siswa tidak ditemukan, pastikan akun <b>Wali Santri</b> memiliki Username (NIS) yang sama persis dengan yang ada di menu <b>Data Siswa (Admin)</b>.
-            </p>
+          <p className="font-semibold text-red-800/90 leading-relaxed md:pl-11">{data.error}</p>
+          
+          <div className="mt-6 pt-5 border-t border-red-500/10 md:pl-11">
+            <div className="bg-white/40 border border-white/60 p-5 rounded-2xl shadow-inner text-sm text-red-700/90 leading-relaxed">
+              Tips: Jika data siswa tidak ditemukan, pastikan akun <b className="font-bold text-red-900">Wali Santri</b> memiliki Username (NIS) yang sama persis dengan yang ada di menu <b className="font-bold text-red-900">Data Siswa (Admin)</b>.
+            </div>
           </div>
         </div>
       </div>
@@ -60,11 +65,13 @@ export default async function WaliDashboardPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-black text-slate-900">Dashboard Wali Santri</h1>
-        <p className="text-slate-500 mt-2">
-          Pantau presensi, evaluasi, dan rekam jejak prestasi putra/putri Anda.
+    <div className="space-y-10 max-w-7xl mx-auto animate-in fade-in duration-500">
+      <div className="px-1">
+        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+          Dashboard Wali Santri
+        </h1>
+        <p className="text-slate-500 mt-2.5 font-medium text-sm md:text-base leading-relaxed max-w-2xl">
+          Pantau presensi, evaluasi, dan rekam jejak prestasi putra/putri Anda dengan mudah dalam satu panel terintegrasi.
         </p>
       </div>
 
