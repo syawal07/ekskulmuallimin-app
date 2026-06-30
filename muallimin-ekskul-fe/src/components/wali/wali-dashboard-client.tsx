@@ -200,11 +200,26 @@ export default function WaliDashboardClient({ data }: { data: DashboardData }) {
                           <span className="text-slate-500 text-[10px] uppercase tracking-wider font-bold mb-1">Kehadiran</span>
                           <span className="font-black text-slate-800 text-2xl">{pk.attendance_summary?.percentage || 0}%</span>
                         </div>
-                        <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex-1 flex flex-col justify-center">
-                          <span className="text-slate-500 text-[10px] uppercase tracking-wider font-bold mb-1">Predikat</span>
-                          <span className="font-black text-amber-600 text-2xl">{pk.assessment?.predicate || '-'}</span>
+                        
+                        <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex-1 flex flex-col justify-center relative overflow-hidden">
+                          <span className="text-slate-500 text-[10px] uppercase tracking-wider font-bold mb-1">Nilai Akhir</span>
+                          <div className="flex items-end gap-2">
+                            <span className="font-black text-amber-600 text-2xl">{pk.assessment?.score || '-'}</span>
+                            {pk.assessment?.predicate && (
+                              <span className="font-bold text-amber-700/60 text-lg mb-0.5">{pk.assessment.predicate}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
+
+                      {pk.assessment?.description && (
+                        <div className="mt-4 bg-amber-50/50 p-4 rounded-2xl border border-amber-100/50 relative">
+                          <Sparkles className="w-4 h-4 text-amber-400 absolute top-4 right-4" />
+                          <p className="text-sm text-slate-600 leading-relaxed font-medium pr-6">
+                            &quot;{pk.assessment.description}&quot;
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

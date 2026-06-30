@@ -93,13 +93,26 @@ class WaliController extends Controller
                 $pkPersentase = $pkTotal > 0 ? round(($pkHadir / $pkTotal) * 100) : 0;
 
                 $pkAssessment = $pkStudent->assessments->first();
+                
+                $predicate = '-';
+                if ($pkAssessment && $pkAssessment->nilai !== null) {
+                    $nilai = $pkAssessment->nilai;
+                    if ($nilai >= 90) $predicate = 'A';
+                    elseif ($nilai >= 80) $predicate = 'B';
+                    elseif ($nilai >= 70) $predicate = 'C';
+                    else $predicate = 'D';
+                }
 
                 return [
                     'jenjang' => $pkStudent->perkaderan ? $pkStudent->perkaderan->nama_jenjang : '-',
                     'jabatan' => $pkStudent->jabatan ?: 'Peserta',
                     'status' => $pkStudent->status,
                     'attendance_summary' => ['percentage' => $pkPersentase],
-                    'assessment' => $pkAssessment ? ['predicate' => $pkAssessment->predicate] : null
+                    'assessment' => $pkAssessment ? [
+                        'score' => $pkAssessment->nilai,
+                        'predicate' => $predicate,
+                        'description' => $pkAssessment->catatan
+                    ] : null
                 ];
             });
 
