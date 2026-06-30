@@ -100,7 +100,7 @@ export default function MentorLayoutClient({
             </div>
             <div>
               <h1 className="font-bold text-slate-900 text-lg leading-tight">Panel Pengajar</h1>
-              <p className="text-[10px] text-slate-400 font-medium tracking-wide">MENTOR AREA</p>
+              <p className="text-[10px] text-slate-400 font-medium tracking-wide">AREA PENGAJAR</p>
             </div>
           </div>
           <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-slate-400 hover:text-red-500">

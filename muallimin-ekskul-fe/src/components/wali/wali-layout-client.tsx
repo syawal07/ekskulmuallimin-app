@@ -48,7 +48,7 @@ function SidebarContent({
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="font-extrabold text-lg text-slate-800 tracking-tight truncate">EkskulMuallimin</h2>
+            <h2 className="font-extrabold text-lg text-slate-800 tracking-tight truncate">Rapor Kesiswaan</h2>
             <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest truncate">Portal Wali</p>
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function WaliLayoutClient({
                 />
               </div>
             </div>
-            <span className="font-extrabold text-lg text-slate-800 tracking-tight">Ekskul App</span>
+            <span className="font-extrabold text-lg text-slate-800 tracking-tight">Kesiswaan</span>
           </div>
           <button 
             onClick={() => setIsMobileMenuOpen(true)} 
