@@ -163,13 +163,16 @@ export async function submitPerkaderanAttendance(formData: FormData) {
       body: formData,
     })
 
-    const result = await response.json()
+const result = await response.json()
     if (!response.ok || !result.success) {
       return { error: result.message || "Gagal menyimpan presensi" }
     }
-
+    revalidatePath("/mentor/dashboard")
+    revalidatePath("/admin/dashboard")
+    revalidatePath("/admin/perkaderan/monitoring")
     revalidatePath("/mentor/perkaderan/presensi")
     revalidatePath("/mentor/perkaderan/riwayat")
+    
     return { success: true }
   } catch (error) {
     return { error: "Terjadi kesalahan koneksi ke server" }
@@ -226,10 +229,12 @@ export async function savePerkaderanAssessment(perkaderanStudentId: number, nila
       })
     });
 
-    const result = await res.json();
+   const result = await res.json();
     if (!res.ok) return { error: result.message || "Gagal menyimpan nilai." }
-
+    revalidatePath("/mentor/dashboard")
+    revalidatePath("/admin/perkaderan/monitoring")
     revalidatePath("/mentor/perkaderan/penilaian")
+    
     return { success: true }
   } catch (error) {
     return { error: "Server Backend bermasalah." }

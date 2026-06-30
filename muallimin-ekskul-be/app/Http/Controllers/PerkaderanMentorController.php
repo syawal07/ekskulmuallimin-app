@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class PerkaderanMentorController extends Controller
 {
-    public function getDashboard(Request $request)
+public function getDashboard(Request $request)
     {
         $user = $request->user()->load('perkaderans');
         $perkaderans = $user->perkaderans;
@@ -21,8 +21,15 @@ class PerkaderanMentorController extends Controller
         $activeYear = AcademicYear::where('is_active', true)->first();
         $tahunAjaran = $activeYear ? $activeYear->name : '-';
 
-        $totalStudents = PerkaderanStudent::whereIn('perkaderan_id', $perkaderans->pluck('id'))
+        $perkaderanStudentIds = PerkaderanStudent::whereIn('perkaderan_id', $perkaderans->pluck('id'))
             ->where('tahun_ajaran', $tahunAjaran)
+            ->pluck('id');
+            
+        $totalStudents = $perkaderanStudentIds->count();
+
+        // Hitung presensi yang dilakukan hari ini khusus untuk pembina ini
+        $attendanceToday = PerkaderanAttendance::whereIn('perkaderan_student_id', $perkaderanStudentIds)
+            ->whereDate('tanggal', Carbon::today()->toDateString())
             ->count();
 
         return response()->json([
@@ -31,6 +38,7 @@ class PerkaderanMentorController extends Controller
                 'mentor_name' => $user->name,
                 'total_perkaderans' => $perkaderans->count(),
                 'total_students' => $totalStudents,
+                'attendance_today' => $attendanceToday, 
                 'perkaderans' => $perkaderans
             ]
         ], 200);
