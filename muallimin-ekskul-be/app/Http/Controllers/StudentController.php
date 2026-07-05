@@ -397,4 +397,44 @@ public function update(Request $request, $id)
             'data' => $students
         ], 200);
     }
+
+    public function destroyMultiple(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:students,id'
+        ]);
+
+        $studentIds = $request->ids;
+        $students = Student::whereIn('id', $studentIds)->get();
+
+        foreach ($students as $student) {
+            if ($student->foto && File::exists(public_path('uploads/students/' . $student->foto))) {
+                File::delete(public_path('uploads/students/' . $student->foto));
+            }
+        }
+        Student::whereIn('id', $studentIds)->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => count($studentIds) . ' data siswa berhasil dihapus secara massal'
+        ], 200);
+    }
+    public function wipeData(Request $request)
+    {
+        $students = Student::whereNotNull('foto')->get();
+        
+        foreach ($students as $student) {
+            if (File::exists(public_path('uploads/students/' . $student->foto))) {
+                File::delete(public_path('uploads/students/' . $student->foto));
+            }
+        }
+
+        Student::query()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Seluruh data siswa dan riwayatnya berhasil dikosongkan.'
+        ], 200);
+    }
 }

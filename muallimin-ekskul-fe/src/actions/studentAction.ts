@@ -265,3 +265,71 @@ export async function createStudentByMentor(prevState: StudentState, formData: F
     return { error: "Server Backend bermasalah." }
   }
 }
+export async function bulkDeleteStudents(studentIds: string[]) {
+  const cookieStore = await cookies()
+  const userRole = cookieStore.get("user_role")?.value
+  const token = cookieStore.get("session_token")?.value
+  
+  if (userRole !== "ADMIN" || !token) {
+    return { error: "Unauthorized" }
+  }
+
+  if (!studentIds || studentIds.length === 0) {
+    return { error: "Tidak ada data siswa yang dipilih." }
+  }
+
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+    const res = await fetch(`${apiUrl}/admin/students/bulk-delete`, {
+      method: "POST",
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ ids: studentIds })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+       return { error: result.message || "Gagal menghapus data massal." }
+    }
+
+    revalidatePath("/admin/siswa")
+    return { success: true }
+  } catch (error) {
+    return { error: "Server Backend bermasalah." }
+  }
+}
+export async function wipeAllStudents() {
+  const cookieStore = await cookies()
+  const userRole = cookieStore.get("user_role")?.value
+  const token = cookieStore.get("session_token")?.value
+  
+  if (userRole !== "ADMIN" || !token) {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+    const res = await fetch(`${apiUrl}/admin/students/wipe`, {
+      method: "POST",
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+       return { error: result.message || "Gagal mengosongkan data." }
+    }
+
+    revalidatePath("/admin/siswa")
+    return { success: true }
+  } catch (error) {
+    return { error: "Server Backend bermasalah." }
+  }
+}
