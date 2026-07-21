@@ -146,3 +146,77 @@ export async function deleteGuru(id: string) {
     return { error: "Server Backend bermasalah." }
   }
 }
+
+export type ImportMentorData = {
+  name: string
+  username: string
+  password?: string
+  role?: string
+  exculName?: string
+}
+
+export async function importGurus(data: ImportMentorData[]) {
+  const cookieStore = await cookies()
+  const userRole = cookieStore.get("user_role")?.value
+  const token = cookieStore.get("session_token")?.value
+  
+  if (userRole !== "ADMIN" || !token) {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+    const res = await fetch(`${apiUrl}/admin/mentors/import`, {
+      method: "POST",
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ mentors: data })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      return { error: result.message || "Gagal import data." }
+    }
+
+    revalidatePath("/admin/guru")
+    return { success: true, count: result.data?.count || 0 }
+  } catch (error) {
+    return { error: "Server Backend bermasalah." }
+  }
+}
+
+export async function wipeAllGurus() {
+  const cookieStore = await cookies()
+  const userRole = cookieStore.get("user_role")?.value
+  const token = cookieStore.get("session_token")?.value
+  
+  if (userRole !== "ADMIN" || !token) {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+    const res = await fetch(`${apiUrl}/admin/mentors/wipe`, {
+      method: "POST",
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+       return { error: result.message || "Gagal mengosongkan data." }
+    }
+
+    revalidatePath("/admin/guru")
+    return { success: true }
+  } catch (error) {
+    return { error: "Server Backend bermasalah." }
+  }
+}

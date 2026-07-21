@@ -18,12 +18,115 @@ class MentorController extends Controller
             $query->where('role', $request->role);
         }
 
-        $mentors = $query->orderBy('name', 'asc')->get();
+        if ($request->has('q') && $request->q != '') {
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->q . '%')
+                  ->orWhere('username', 'like', '%' . $request->q . '%');
+            });
+        }
+
+        $limit = $request->query('limit', 10);
+        $mentors = $query->orderBy('name', 'asc')->paginate($limit);
 
         return response()->json([
             'success' => true,
             'data' => $mentors
         ], 200);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'mentors' => 'required|array'
+        ]);
+
+        $mentorsData = $request->mentors;
+        $insertedCount = 0;
+        $allExculs = \App\Models\Excul::all();
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            foreach ($mentorsData as $data) {
+                if (empty($data['name']) || empty($data['username'])) {
+                    continue;
+                }
+
+                $mentor = User::updateOrCreate(
+                    ['username' => strtolower($data['username'])],
+                    [
+                        'name' => $data['name'],
+                        'password' => Hash::make($data['password'] ?? 'kampusterpadu'),
+                        'role' => $data['role'] ?? 'MENTOR'
+                    ]
+                );
+
+                if (!empty($data['exculName'])) {
+                    $exculNamesArray = array_map('trim', explode(',', $data['exculName']));
+                    $syncData = [];
+
+                    foreach ($exculNamesArray as $exName) {
+                        $excul = $allExculs->first(function($item) use ($exName) {
+                            return strtolower(trim($item->name)) === strtolower($exName);
+                        });
+                        if ($excul) {
+                            $syncData[] = $excul->id;
+                        }
+                    }
+
+                    if (count($syncData) > 0) {
+                        $mentor->mentoringExculs()->syncWithoutDetaching($syncData);
+                    }
+                }
+
+                $insertedCount++;
+            }
+            \Illuminate\Support\Facades\DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Berhasil import/update data pelatih',
+                'data' => ['count' => $insertedCount]
+            ], 201);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'success' => false, 
+                'message' => 'Gagal import: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function wipeData(Request $request)
+    {
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $mentors = User::whereIn('role', ['MENTOR', 'PEMBINA'])->get();
+            
+            foreach ($mentors as $mentor) {
+                $hasAttendance = \App\Models\Attendance::where('recorder_id', $mentor->id)->exists();
+                
+                $mentor->mentoringExculs()->detach();
+                $mentor->perkaderans()->detach();
+                
+                if (!$hasAttendance) {
+                    $mentor->delete();
+                }
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Seluruh data pelatih berhasil dibersihkan.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'success' => false, 
+                'message' => 'Gagal mengosongkan data.'
+            ], 500);
+        }
     }
 
     public function show($id)

@@ -79,6 +79,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/mentors/{id}', [MentorController::class, 'show']);
     Route::put('/admin/mentors/{id}', [MentorController::class, 'update']);
     Route::delete('/admin/mentors/{id}', [MentorController::class, 'destroy']);
+    Route::post('/admin/mentors/import', [MentorController::class, 'import']);
+    Route::post('/admin/mentors/wipe', [MentorController::class, 'wipeData']);
 
     // Admin - Manajemen Perkaderan
     Route::get('/admin/perkaderans', [PerkaderanController::class, 'index']);
