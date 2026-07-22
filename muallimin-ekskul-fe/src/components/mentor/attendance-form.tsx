@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { submitAttendance, deleteAttendanceSession } from "@/actions/attendanceAction"
 import { createStudentByMentor } from "@/actions/studentAction"
-import { Save, Loader2, Trash2, Camera, ChevronLeft, ChevronRight, Search, Plus, X, Check, ChevronsUpDown } from "lucide-react"
+import { Save, Loader2, Trash2, Camera, ChevronLeft, ChevronRight, Search, Plus, X, Check, ChevronsUpDown, CheckCircle2, XCircle } from "lucide-react"
 import Image from "next/image"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -126,6 +126,20 @@ export default function AttendanceForm({
     }))
   }
 
+  const handleBulkStatus = (status: "HADIR" | "ALPHA") => {
+    setLocalData(prev => {
+      const updatedData = { ...prev }
+      students.forEach(student => {
+        updatedData[student.id] = {
+          status: status,
+          notes: prev[student.id]?.notes ?? getInitialNotes(student.id)
+        }
+      })
+      return updatedData
+    })
+    toast.success(`Berhasil mengatur semua santri menjadi ${status === 'HADIR' ? 'Hadir' : 'Alpha'}`)
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -133,8 +147,8 @@ export default function AttendanceForm({
     const formData = new FormData(e.currentTarget)
     
     const file = formData.get("proofImage") as File
-    if (file && file.size > 2 * 1024 * 1024) {
-      toast.error("Ukuran foto terlalu besar! Maksimal 2MB.")
+    if (file && file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran foto terlalu besar! Maksimal 5MB.")
       setIsSubmitting(false)
       return
     }
@@ -213,7 +227,6 @@ export default function AttendanceForm({
           <CardContent className="pt-4">
             <div className="grid lg:grid-cols-2 gap-6">
               
-              {/* Kolom Kiri: Info Dasar */}
               <div className="space-y-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Kelas Ekskul</Label>
@@ -235,16 +248,14 @@ export default function AttendanceForm({
                 </div>
               </div>
 
-              {/* Kolom Kanan: Upload Foto */}
               <div className="flex flex-col h-full">
                 <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Dokumentasi (Opsional)</Label>
                 <div className="flex-1 relative group rounded-xl border-2 border-dashed border-slate-200 bg-white hover:bg-slate-50 hover:border-primary/50 transition-all duration-300 overflow-hidden flex flex-col items-center justify-center min-h-[160px] p-4 shadow-sm">
                   
-                  {/* Input file disembunyikan tapi menutupi seluruh area kotak */}
                   <Input 
                     type="file" 
                     name="proofImage" 
-                    accept="image/png, image/jpeg, image/jpg"
+                    accept="image/png, image/jpeg, image/jpg, image/webp"
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
                   
@@ -267,7 +278,7 @@ export default function AttendanceForm({
                       </div>
                       <div className="text-center">
                         <p className="text-sm font-semibold text-slate-600">Unggah Foto Kegiatan</p>
-                        <p className="text-xs text-slate-400 mt-1">Format JPG/PNG, Maksimal 2MB</p>
+                        <p className="text-xs text-slate-400 mt-1">Format JPG/PNG/WEBP, Maksimal 5MB</p>
                       </div>
                     </div>
                   )}
@@ -280,40 +291,66 @@ export default function AttendanceForm({
 
         <Card className="shadow-sm border-slate-200 bg-white">
           <CardHeader className="border-b border-slate-100 pb-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <CardTitle className="text-slate-800 whitespace-nowrap">
-                Daftar Siswa ({filteredStudents.length})
-              </CardTitle>
-              
-              <div className="flex flex-col sm:flex-row items-center w-full sm:w-auto gap-3">
-                <Button 
-                  type="button" 
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Tambah Siswa
-                </Button>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <CardTitle className="text-slate-800 whitespace-nowrap">
+                  Daftar Siswa ({filteredStudents.length})
+                </CardTitle>
+                
+                <div className="flex flex-col sm:flex-row items-center w-full sm:w-auto gap-3">
+                  <Button 
+                    type="button" 
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Siswa
+                  </Button>
 
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-                  <Input 
-                    placeholder="Cari nama atau kelas..." 
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value)
-                      setCurrentPage(1)
-                    }}
-                    className="pl-9 h-9 text-sm"
-                  />
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                    <Input 
+                      placeholder="Cari nama atau kelas..." 
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value)
+                        setCurrentPage(1)
+                      }}
+                      className="pl-9 h-9 text-sm bg-slate-50 border-slate-200 focus-visible:ring-primary"
+                    />
+                  </div>
                 </div>
-                <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full whitespace-nowrap">
-                  Hal {currentPage}/{totalPages}
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleBulkStatus("HADIR")}
+                    className="flex-1 sm:flex-none border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800 bg-white"
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />
+                    Hadir Semua
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleBulkStatus("ALPHA")}
+                    className="flex-1 sm:flex-none border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 bg-white"
+                  >
+                    <XCircle className="w-4 h-4 mr-2 text-red-600" />
+                    Alpha Semua
+                  </Button>
+                </div>
+                
+                <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full whitespace-nowrap self-end sm:self-auto">
+                  Halaman {currentPage}/{totalPages}
                 </span>
               </div>
             </div>
           </CardHeader>
 
-        <CardContent className="pt-6">
+          <CardContent className="pt-6">
             <div className="space-y-4">
               {paginatedStudents.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-xl">
@@ -323,7 +360,6 @@ export default function AttendanceForm({
                 paginatedStudents.map((student, index) => (
                   <div key={student.id} className="p-4 rounded-xl border border-slate-200 bg-white hover:border-primary/30 hover:shadow-md transition-all duration-200 flex flex-col gap-4">
                     
-                    {/* HIERARKI 1: Identitas Siswa */}
                     <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                         {(currentPage - 1) * itemsPerPage + index + 1}
@@ -336,10 +372,8 @@ export default function AttendanceForm({
                       </div>
                     </div>
 
-                    {/* HIERARKI 2: Aksi Presensi & Catatan */}
                     <div className="flex flex-col md:flex-row gap-4">
                       
-                      {/* Grid 4 Kolom untuk Status */}
                       <div className="flex-1">
                         <RadioGroup 
                           value={getCurrentStatus(student.id)} 
@@ -374,7 +408,6 @@ export default function AttendanceForm({
                         </RadioGroup>
                       </div>
 
-                      {/* Input Catatan Proporsional */}
                       <div className="w-full md:w-1/3 xl:w-1/4">
                         <Input 
                           name={`notes-${student.id}`} 
@@ -390,8 +423,6 @@ export default function AttendanceForm({
                 ))
               )}
             </div>
-
-            
 
             {totalPages > 1 && (
               <div className="flex justify-between items-center mt-8 pt-4 border-t border-slate-100">

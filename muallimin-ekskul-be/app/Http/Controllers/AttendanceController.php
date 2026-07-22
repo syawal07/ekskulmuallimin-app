@@ -115,9 +115,8 @@ class AttendanceController extends Controller
         ], 200);
     }
 
-    public function store(Request $request)
+public function store(Request $request)
     {
-        // PERBAIKAN: Jika frontend mengirim exculId, ubah menjadi excul_id agar lolos validasi
         if ($request->has('exculId')) {
             $request->merge(['excul_id' => $request->exculId]);
         }
@@ -125,10 +124,11 @@ class AttendanceController extends Controller
         $request->validate([
             'date' => 'required|date',
             'excul_id' => 'required|exists:exculs,id',
-            'proofImage' => 'nullable|image|max:2048'
+            'proofImage' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120'
         ]);
 
         $activeYear = AcademicYear::where('is_active', true)->first();
+
         if (!$activeYear) {
             return response()->json(['success' => false, 'message' => 'Tahun Pelajaran belum diatur'], 400);
         }
@@ -138,11 +138,14 @@ class AttendanceController extends Controller
         $exculId = $request->excul_id;
 
         $proofImageUrl = null;
+
         if ($request->hasFile('proofImage')) {
             $file = $request->file('proofImage');
             $filename = 'proof-' . time() . '-' . uniqid() . '.' . $file->getClientOriginalExtension();
+            
             $destinationPath = public_path('uploads/proofs');
             if (!file_exists($destinationPath)) mkdir($destinationPath, 0755, true);
+            
             $file->move($destinationPath, $filename);
             $proofImageUrl = '/uploads/proofs/' . $filename;
         }
@@ -166,7 +169,7 @@ class AttendanceController extends Controller
                             'status' => $status,
                             'notes' => $notes,
                             'recorder_id' => $userId,
-                            'proof_image_url' => $proofImageUrl ?: $existing->proof_image_url // Gunakan penamaan kolom database yang benar
+                            'proof_image_url' => $proofImageUrl ?: $existing->proof_image_url
                         ]);
                     } else {
                         Attendance::create([
@@ -177,7 +180,7 @@ class AttendanceController extends Controller
                             'recorder_id' => $userId,
                             'excul_id' => $exculId,
                             'academic_year_id' => $activeYear->id,
-                            'proof_image_url' => $proofImageUrl // Gunakan penamaan kolom database yang benar
+                            'proof_image_url' => $proofImageUrl
                         ]);
                     }
                 }
