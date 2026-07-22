@@ -4,11 +4,13 @@ import { useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Trash2, Loader2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Users, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Trash2, Loader2, Plus } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import SiswaActionButtons from "@/components/admin/siswa-action-buttons"
-import { bulkDeleteStudents } from "@/actions/studentAction"
+import { bulkDeleteStudents, bulkAssignStudentsToExcul } from "@/actions/studentAction"
 
 interface Excul {
   id: string;
@@ -48,6 +50,7 @@ interface SiswaTableClientProps {
   search: string;
   filterExculId: string;
   filterKelas: string;
+  exculs: Excul[];
 }
 
 export default function SiswaTableClient({
@@ -57,10 +60,14 @@ export default function SiswaTableClient({
   totalPages,
   search,
   filterExculId,
-  filterKelas
+  filterKelas,
+  exculs
 }: SiswaTableClientProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isAssigning, setIsAssigning] = useState(false)
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
+  const [selectedAssignExcul, setSelectedAssignExcul] = useState<string>("")
 
   const hasNextPage = page < totalPages
   const hasPrevPage = page > 1
@@ -96,23 +103,55 @@ export default function SiswaTableClient({
     setIsDeleting(false)
   }
 
+  const handleBulkAssign = async () => {
+    if (!selectedAssignExcul) {
+      toast.error("Silakan pilih ekstrakurikuler terlebih dahulu.")
+      return
+    }
+
+    setIsAssigning(true)
+    const res = await bulkAssignStudentsToExcul(selectedIds, selectedAssignExcul)
+
+    if (res?.error) {
+      toast.error(res.error)
+    } else {
+      toast.success(`${selectedIds.length} siswa berhasil ditambahkan ke ekstrakurikuler.`)
+      setSelectedIds([])
+      setIsAssignModalOpen(false)
+      setSelectedAssignExcul("")
+    }
+    setIsAssigning(false)
+  }
+
   return (
     <div className="w-full">
       {selectedIds.length > 0 && (
-        <div className="px-4 py-3 bg-red-50 border-b border-red-100 flex items-center justify-between">
-          <span className="text-sm font-semibold text-red-700">
+        <div className="px-4 py-3 bg-blue-50/50 border-b border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all">
+          <span className="text-sm font-semibold text-blue-800">
             {selectedIds.length} siswa dipilih
           </span>
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={handleBulkDelete} 
-            disabled={isDeleting}
-            className="shadow-md shadow-red-500/20"
-          >
-            {isDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-            Hapus Terpilih
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsAssignModalOpen(true)} 
+              disabled={isDeleting || isAssigning}
+              className="border-blue-200 text-blue-700 hover:bg-blue-100"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Tambahkan ke Ekskul
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={handleBulkDelete} 
+              disabled={isDeleting || isAssigning}
+              className="shadow-md shadow-red-500/20"
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Hapus Terpilih
+            </Button>
+          </div>
         </div>
       )}
 
@@ -125,7 +164,7 @@ export default function SiswaTableClient({
                 className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer accent-blue-600"
                 checked={students.length > 0 && selectedIds.length === students.length}
                 onChange={handleSelectAll}
-                disabled={students.length === 0 || isDeleting}
+                disabled={students.length === 0 || isDeleting || isAssigning}
               />
             </TableHead>
             <TableHead className="w-[50px] text-center">No</TableHead>
@@ -150,7 +189,7 @@ export default function SiswaTableClient({
                       className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer accent-blue-600"
                       checked={isSelected}
                       onChange={(e) => handleSelectOne(e, siswa.id)}
-                      disabled={isDeleting}
+                      disabled={isDeleting || isAssigning}
                     />
                   </TableCell>
                   <TableCell className="font-medium text-slate-500 text-center">
@@ -267,6 +306,40 @@ export default function SiswaTableClient({
           </Link>
         </div>
       </div>
+
+      <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Tambahkan ke Ekstrakurikuler</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-slate-500">
+              Pilih ekstrakurikuler (termasuk ekstra wajib) untuk <b className="text-slate-900">{selectedIds.length}</b> siswa yang dicentang. Ekstrakurikuler lama mereka tidak akan dihapus.
+            </p>
+            <div className="space-y-2">
+              <Select value={selectedAssignExcul} onValueChange={setSelectedAssignExcul}>
+                <SelectTrigger>
+                  <SelectValue placeholder="-- Pilih Ekstrakurikuler --" />
+                </SelectTrigger>
+                <SelectContent>
+                  {exculs.map((ex) => (
+                    <SelectItem key={ex.id} value={ex.id}>
+                      {ex.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>Batal</Button>
+            <Button onClick={handleBulkAssign} disabled={isAssigning || !selectedAssignExcul} className="bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]">
+              {isAssigning && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

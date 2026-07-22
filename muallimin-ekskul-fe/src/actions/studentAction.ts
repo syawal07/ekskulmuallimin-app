@@ -217,21 +217,20 @@ export async function updateStudent(
   redirect("/admin/siswa?success=updated")
 }
 
-export async function createStudentByMentor(prevState: StudentState, formData: FormData) {
+export async function createStudentByMentor(prevState: unknown, formData: FormData) {
   const cookieStore = await cookies()
   const token = cookieStore.get("session_token")?.value
-  
-  if (!token) {
-    return { error: "Sesi tidak valid, silakan login ulang." }
+  const userRole = cookieStore.get("user_role")?.value
+
+  if (!token || (userRole !== "MENTOR" && userRole !== "PEMBINA")) {
+    return { error: "Akses ditolak. Sesi tidak valid." }
   }
 
-  const name = formData.get("name") as string
-  const kelas = formData.get("class") as string
-  const nis = formData.get("nis") as string
+  const studentId = formData.get("student_id") as string
   const exculId = formData.get("exculId") as string
 
-  if (!name || !kelas || !exculId) {
-    return { error: "Nama, Kelas, dan Ekskul wajib diisi." }
+  if (!studentId || !exculId) {
+    return { error: "Silakan cari dan pilih santri terlebih dahulu." }
   }
 
   try {
@@ -244,27 +243,26 @@ export async function createStudentByMentor(prevState: StudentState, formData: F
         'Accept': 'application/json'
       },
       body: JSON.stringify({
-        name: name,
-        class: kelas,
-        nis: nis || null,
-        excul_id: [exculId]
+        student_id: studentId,
+        exculId: exculId
       })
     });
 
     const result = await res.json();
 
     if (!res.ok) {
-      return { error: result.message || "Gagal menyimpan data siswa." }
+      return { error: result.message || "Gagal mendaftarkan santri ke ekskul." }
     }
 
     revalidatePath("/mentor/dashboard")
-    revalidatePath("/mentor/presensi-setup")
+    revalidatePath("/mentor/presensi")
     
     return { success: true }
   } catch (error) {
     return { error: "Server Backend bermasalah." }
   }
 }
+
 export async function bulkDeleteStudents(studentIds: string[]) {
   const cookieStore = await cookies()
   const userRole = cookieStore.get("user_role")?.value
@@ -325,6 +323,51 @@ export async function wipeAllStudents() {
 
     if (!res.ok) {
        return { error: result.message || "Gagal mengosongkan data." }
+    }
+
+    revalidatePath("/admin/siswa")
+    return { success: true }
+  } catch (error) {
+    return { error: "Server Backend bermasalah." }
+  }
+}
+
+export async function bulkAssignStudentsToExcul(studentIds: string[], exculId: string) {
+  const cookieStore = await cookies()
+  const userRole = cookieStore.get("user_role")?.value
+  const token = cookieStore.get("session_token")?.value
+
+  if (userRole !== "ADMIN" || !token) {
+    return { error: "Unauthorized" }
+  }
+
+  if (!studentIds || studentIds.length === 0) {
+    return { error: "Tidak ada siswa yang dipilih." }
+  }
+
+  if (!exculId) {
+    return { error: "Ekstrakurikuler belum dipilih." }
+  }
+
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+    const res = await fetch(`${apiUrl}/admin/students/bulk-assign-excul`, {
+      method: "POST",
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        student_ids: studentIds,
+        excul_id: exculId
+      })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+       return { error: result.message || "Gagal mendaftarkan siswa ke ekskul." }
     }
 
     revalidatePath("/admin/siswa")

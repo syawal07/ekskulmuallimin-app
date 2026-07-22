@@ -437,4 +437,72 @@ public function update(Request $request, $id)
             'message' => 'Seluruh data siswa dan riwayatnya berhasil dikosongkan.'
         ], 200);
     }
+
+    public function bulkAssignExcul(Request $request)
+    {
+        $request->validate([
+            'student_ids' => 'required|array',
+            'student_ids.*' => 'exists:students,id',
+            'excul_id' => 'required|exists:exculs,id'
+        ]);
+
+        $activeYear = AcademicYear::where('is_active', true)->first();
+        if (!$activeYear) {
+            return response()->json(['success' => false, 'message' => 'Tahun Pelajaran belum diatur.'], 400);
+        }
+
+        $students = Student::whereIn('id', $request->student_ids)->get();
+        $exculId = $request->excul_id;
+
+        $syncData = [
+            $exculId => ['academic_year_id' => $activeYear->id, 'is_active' => true]
+        ];
+
+        foreach ($students as $student) {
+            $student->exculs()->syncWithoutDetaching($syncData);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => count($request->student_ids) . ' siswa berhasil ditambahkan ke ekstrakurikuler'
+        ], 200);
+    }
+
+    public function storeByMentor(Request $request)
+    {
+        // Tangkap exculId dari frontend dan jadikan array
+        if ($request->has('exculId')) {
+            $request->merge(['excul_id' => [$request->exculId]]);
+        }
+
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'excul_id' => 'required|array',
+            'excul_id.*' => 'exists:exculs,id'
+        ]);
+
+        $activeYear = AcademicYear::where('is_active', true)->first();
+        if (!$activeYear) {
+            return response()->json(['success' => false, 'message' => 'Tahun Pelajaran belum diatur.'], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            $student = Student::find($request->student_id);
+
+            $syncData = [];
+            foreach ($request->excul_id as $exculId) {
+                $syncData[$exculId] = ['academic_year_id' => $activeYear->id, 'is_active' => true];
+            }
+
+            // Tambahkan relasi ke ekskul tanpa menghapus ekskul pilihannya yang lain
+            $student->exculs()->syncWithoutDetaching($syncData);
+
+            DB::commit();
+            return response()->json(['success' => true, 'data' => $student], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem.'], 500);
+        }
+    }
 }

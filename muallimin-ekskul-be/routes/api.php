@@ -72,6 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/admin/students/{id}', [StudentController::class, 'destroy']);
     Route::post('/admin/students/bulk-delete', [StudentController::class, 'destroyMultiple']);
     Route::post('/admin/students/wipe', [StudentController::class, 'wipeData']);
+    Route::post('/admin/students/bulk-assign-excul', [StudentController::class, 'bulkAssignExcul']);
 
     // Admin - Manajemen Mentor/Guru
     Route::get('/admin/mentors', [MentorController::class, 'index']);

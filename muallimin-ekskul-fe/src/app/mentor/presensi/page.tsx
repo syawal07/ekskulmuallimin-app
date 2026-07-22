@@ -94,6 +94,7 @@ export default async function PresensiPage({
 
       <AttendanceForm 
         students={students} 
+        allStudents={data.all_students || []} 
         exculId={selectedExculId} 
         exculName={selectedExculName || ""}
         initialData={existing_attendance} 

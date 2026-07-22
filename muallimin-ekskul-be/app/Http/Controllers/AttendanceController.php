@@ -53,23 +53,24 @@ class AttendanceController extends Controller
         ], 200);
     }
 
-    public function getPresensiSetup(Request $request)
+   public function getPresensiSetup(Request $request)
     {
         $user = $request->user()->load('mentoringExculs');
         $exculs = $user->mentoringExculs;
-        // Mengakomodasi format URL frontend (bisa excul_id atau exculId)
         $exculId = $request->query('excul_id') ?? $request->query('exculId');
+        
         $activeYear = AcademicYear::where('is_active', true)->first();
-
         $selectedExculName = null;
         $students = [];
         $existingAttendance = [];
+        $allStudents = []; // VARIABEL BARU UNTUK DROPDOWN
 
         if ($exculId) {
             $selectedExcul = $exculs->where('id', $exculId)->first();
             if ($selectedExcul) {
                 $selectedExculName = $selectedExcul->name;
                 
+                // Santri yang sudah ada di kelas ekskul ini
                 $students = Student::whereHas('exculs', function($q) use ($exculId, $activeYear) {
                         $q->where('excul_student.excul_id', $exculId);
                         if ($activeYear) {
@@ -83,15 +84,21 @@ class AttendanceController extends Controller
                 $attendances = Attendance::where('excul_id', $exculId)
                     ->whereBetween('date', [Carbon::today()->startOfDay(), Carbon::today()->endOfDay()])
                     ->get();
-
                 $existingAttendance = $attendances->map(function($att) {
                     return [
                         'studentId' => $att->student_id,
                         'status' => $att->status,
                         'notes' => $att->notes,
-                        'proofImageUrl' => $att->proof_image_url // Pastikan membaca kolom yang benar
+                        'proofImageUrl' => $att->proof_image_url
                     ];
                 });
+
+                // AMBIL SEMUA DATA SISWA AKTIF UNTUK DROPDOWN PENCARIAN PELATIH
+                $allStudents = Student::where('is_active', true)
+                                ->select('id', 'name', 'class', 'nis')
+                                ->orderBy('class', 'asc')
+                                ->orderBy('name', 'asc')
+                                ->get();
             }
         }
 
@@ -102,7 +109,8 @@ class AttendanceController extends Controller
                 'selectedExculId' => $exculId,
                 'selectedExculName' => $selectedExculName,
                 'students' => $students,
-                'existing_attendance' => $existingAttendance
+                'existing_attendance' => $existingAttendance,
+                'all_students' => $allStudents // KIRIM KE FRONTEND
             ]
         ], 200);
     }

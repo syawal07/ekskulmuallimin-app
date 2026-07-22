@@ -152,7 +152,7 @@ export default async function AdminSiswaPage({
           </div>
         </CardHeader>
 
-        <CardContent className="p-0">
+       <CardContent className="p-0">
           <SiswaTableClient 
             students={students} 
             page={page} 
@@ -161,6 +161,7 @@ export default async function AdminSiswaPage({
             search={search}
             filterExculId={filterExculId}
             filterKelas={filterKelas}
+            exculs={allExculs} 
           />
         </CardContent>
       </Card>
