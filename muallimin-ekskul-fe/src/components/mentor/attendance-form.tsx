@@ -60,7 +60,7 @@ export default function AttendanceForm({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10 
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const [localData, setLocalData] = useState<Record<string, { status: string, notes: string }>>({})
   
@@ -318,6 +318,21 @@ export default function AttendanceForm({
                       className="pl-9 h-9 text-sm bg-slate-50 border-slate-200 focus-visible:ring-primary"
                     />
                   </div>
+                  
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value))
+                      setCurrentPage(1)
+                    }}
+                    className="h-9 w-full sm:w-auto rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
+                  >
+                    <option value={10}>10 Baris</option>
+                    <option value={25}>25 Baris</option>
+                    <option value={50}>50 Baris</option>
+                    <option value={100}>100 Baris</option>
+                    <option value={99999}>Semua</option>
+                  </select>
                 </div>
               </div>
 
