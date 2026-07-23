@@ -67,7 +67,7 @@ async function getExculs(): Promise<Excul[]> {
   }
 }
 
-async function getStudents(page: number, q: string, exculId: string, kelas: string): Promise<StudentResponse> {
+async function getStudents(page: number, limit: number, q: string, exculId: string, kelas: string): Promise<StudentResponse> {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
     const token = await getToken();
@@ -75,6 +75,7 @@ async function getStudents(page: number, q: string, exculId: string, kelas: stri
 
     const queryParams = new URLSearchParams({
       page: page.toString(),
+      limit: limit.toString(),
       q: q || "",
       exculId: exculId || "",
       kelas: kelas || ""
@@ -102,17 +103,17 @@ async function getStudents(page: number, q: string, exculId: string, kelas: stri
 export default async function AdminSiswaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; exculId?: string; kelas?: string }>
+  searchParams: Promise<{ page?: string; limit?: string; q?: string; exculId?: string; kelas?: string }>
 }) {
   const params = await searchParams
   const page = Number(params.page) || 1
-  const limit = 10
+  const limit = Number(params.limit) || 10
   const search = params.q || ""
   const filterExculId = params.exculId || ""
   const filterKelas = params.kelas || ""
 
   const allExculs = await getExculs()
-  const studentData = await getStudents(page, search, filterExculId, filterKelas)
+  const studentData = await getStudents(page, limit, search, filterExculId, filterKelas)
 
   const students = studentData.data
   const totalCount = studentData.total
@@ -126,7 +127,7 @@ export default async function AdminSiswaPage({
           <h1 className="text-3xl font-bold text-slate-900">Data Siswa</h1>
           <p className="text-slate-600">Daftar seluruh data induk kegiatan santri.</p>
         </div>
-      <div className="flex flex-wrap gap-2 justify-end">
+        <div className="flex flex-wrap gap-2 justify-end">
           <WipeStudentButton />
           <ImportStudentButton />
           <Link href="/admin/siswa/baru">
@@ -152,7 +153,7 @@ export default async function AdminSiswaPage({
           </div>
         </CardHeader>
 
-       <CardContent className="p-0">
+        <CardContent className="p-0">
           <SiswaTableClient 
             students={students} 
             page={page} 

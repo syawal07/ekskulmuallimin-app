@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -63,6 +64,7 @@ export default function SiswaTableClient({
   filterKelas,
   exculs
 }: SiswaTableClientProps) {
+  const router = useRouter()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [isDeleting, setIsDeleting] = useState(false)
   const [isAssigning, setIsAssigning] = useState(false)
@@ -71,6 +73,17 @@ export default function SiswaTableClient({
 
   const hasNextPage = page < totalPages
   const hasPrevPage = page > 1
+
+  const handleLimitChange = (value: string) => {
+    const params = new URLSearchParams()
+    params.set("page", "1")
+    params.set("limit", value)
+    if (search) params.set("q", search)
+    if (filterExculId) params.set("exculId", filterExculId)
+    if (filterKelas) params.set("kelas", filterKelas)
+    
+    router.push(`?${params.toString()}`)
+  }
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
@@ -124,7 +137,27 @@ export default function SiswaTableClient({
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full flex flex-col">
+      <div className="flex flex-col sm:flex-row justify-between items-center p-4 border-b border-slate-100 bg-white gap-3">
+        <div className="text-sm font-medium text-slate-500">
+          Tampilan Data Tabel
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-slate-500">Baris per halaman:</span>
+          <Select value={limit.toString()} onValueChange={handleLimitChange}>
+            <SelectTrigger className="w-[100px] h-8 bg-slate-50 border-slate-200">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10 Baris</SelectItem>
+              <SelectItem value="25">25 Baris</SelectItem>
+              <SelectItem value="50">50 Baris</SelectItem>
+              <SelectItem value="100">100 Baris</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {selectedIds.length > 0 && (
         <div className="px-4 py-3 bg-blue-50/50 border-b border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all">
           <span className="text-sm font-semibold text-blue-800">
@@ -287,7 +320,7 @@ export default function SiswaTableClient({
         </div>
         <div className="flex gap-2">
           <Link
-            href={`/admin/siswa?page=${page - 1}&q=${search}&exculId=${filterExculId}&kelas=${filterKelas}`}
+            href={`/admin/siswa?page=${page - 1}&limit=${limit}&q=${search}&exculId=${filterExculId}&kelas=${filterKelas}`}
             scroll={false}
             className={!hasPrevPage ? "pointer-events-none" : ""}
           >
@@ -296,7 +329,7 @@ export default function SiswaTableClient({
             </Button>
           </Link>
           <Link
-            href={`/admin/siswa?page=${page + 1}&q=${search}&exculId=${filterExculId}&kelas=${filterKelas}`}
+            href={`/admin/siswa?page=${page + 1}&limit=${limit}&q=${search}&exculId=${filterExculId}&kelas=${filterKelas}`}
             scroll={false}
             className={!hasNextPage ? "pointer-events-none" : ""}
           >

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
-    public function index(Request $request)
+   public function index(Request $request)
     {
         $activeYear = AcademicYear::where('is_active', true)->first();
         
@@ -46,8 +46,13 @@ class StudentController extends Controller
         if ($request->has('status_aktif') && $request->status_aktif != '') {
             $query->where('is_active', filter_var($request->status_aktif, FILTER_VALIDATE_BOOLEAN));
         }
+        $limit = (int) $request->query('limit', 10);
+        $allowedLimits = [10, 25, 50, 100];
+        
+        if (!in_array($limit, $allowedLimits)) {
+            $limit = 10;
+        }
 
-        $limit = $request->query('limit', 10);
         $students = $query->orderBy('name', 'asc')->paginate($limit);
 
         $availableClasses = Student::select('class')
