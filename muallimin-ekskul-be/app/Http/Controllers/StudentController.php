@@ -309,11 +309,11 @@ public function update(Request $request, $id)
         DB::beginTransaction();
         try {
             foreach ($studentsData as $data) {
-                if (empty($data['name']) || empty($data['class']) || empty($data['exculName'])) {
+                // PERUBAHAN: Hapus validasi empty($data['exculName']) agar siswa tanpa ekskul tetap masuk Data Induk
+                if (empty($data['name']) || empty($data['class'])) {
                     continue;
                 }
 
-                // Logika Anti-Double: Cari berdasarkan NIS, jika kosong cari berdasarkan Nama & Kelas
                 $matchThese = [];
                 if (!empty($data['nis'])) {
                     $matchThese['nis'] = $data['nis'];
@@ -335,25 +335,27 @@ public function update(Request $request, $id)
                     ]
                 );
 
-                $exculNamesArray = array_map('trim', explode(',', $data['exculName']));
-                $perkaderanNamesArray = isset($data['perkaderanName']) && $data['perkaderanName'] != '' ? array_map('trim', explode(',', $data['perkaderanName'])) : [];
-
-                $syncData = [];
-                foreach ($exculNamesArray as $exName) {
-                    $excul = $allExculs->first(function($item) use ($exName) {
-                        return strtolower(trim($item->name)) === strtolower($exName);
-                    });
-                    if ($excul) {
-                        $syncData[$excul->id] = ['academic_year_id' => $activeYear->id, 'is_active' => true];
+                // PERUBAHAN: Cek dulu apakah kolom ekskul diisi di Excel
+                if (isset($data['exculName']) && trim($data['exculName']) !== '') {
+                    $exculNamesArray = array_map('trim', explode(',', $data['exculName']));
+                    $syncData = [];
+                    foreach ($exculNamesArray as $exName) {
+                        $excul = $allExculs->first(function($item) use ($exName) {
+                            return strtolower(trim($item->name)) === strtolower($exName);
+                        });
+                        if ($excul) {
+                            $syncData[$excul->id] = ['academic_year_id' => $activeYear->id, 'is_active' => true];
+                        }
+                    }
+                    
+                    if (count($syncData) > 0) {
+                        $student->exculs()->syncWithoutDetaching($syncData);
                     }
                 }
-                
-                if (count($syncData) > 0) {
-                    // Gunakan syncWithoutDetaching agar ekskul sebelumnya tidak hilang
-                    $student->exculs()->syncWithoutDetaching($syncData);
-                }
 
-                if (count($perkaderanNamesArray) > 0) {
+                // PERUBAHAN: Cek dulu apakah kolom perkaderan diisi di Excel
+                if (isset($data['perkaderanName']) && trim($data['perkaderanName']) !== '') {
+                    $perkaderanNamesArray = array_map('trim', explode(',', $data['perkaderanName']));
                     foreach($perkaderanNamesArray as $pkName) {
                         $pk = $allPerkaderans->first(function($item) use ($pkName) {
                             return strtolower(trim($item->nama_jenjang)) === strtolower($pkName);
