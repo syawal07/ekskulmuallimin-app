@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
+import { getToken } from "@/lib/session"
 
 export async function submitAttendance(formData: FormData) {
   const cookieStore = await cookies()
@@ -154,5 +155,28 @@ export async function fetchMentorAttendanceRecap(exculId: string, startDate: str
     return { success: true, data: result.data }
   } catch (error) {
     return { error: "Terjadi gangguan koneksi ke server backend." }
+  }
+}
+
+export async function fetchMentorRecap(startDate: string, endDate: string) {
+  try {
+    const token = await getToken()
+    if (!token) return { error: "Sesi tidak valid" }
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL
+    const res = await fetch(`${baseUrl}/admin/attendances/mentor-recap?start_date=${startDate}&end_date=${endDate}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json"
+      },
+      cache: "no-store"
+    })
+
+    const json = await res.json()
+    if (!res.ok) return { error: json.message || "Gagal mengambil rekap pelatih" }
+    
+    return { data: json.data }
+  } catch (error) {
+    return { error: "Terjadi kesalahan saat memuat data" }
   }
 }

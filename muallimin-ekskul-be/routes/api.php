@@ -95,6 +95,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/attendances/recap', [AdminAttendanceController::class, 'getMonthlyRecap']);
     Route::get('/admin/attendances/sessions', [AdminAttendanceController::class, 'getSessions']);
     Route::get('/admin/attendances/export', [AdminAttendanceController::class, 'export']);
+    Route::get('/admin/attendances/mentor-recap', [AdminAttendanceController::class, 'getMentorRecap']);
 
     // Mentor - Manajemen Perkaderan
     Route::get('/mentor/perkaderan/dashboard', [PerkaderanMentorController::class, 'getDashboard']);

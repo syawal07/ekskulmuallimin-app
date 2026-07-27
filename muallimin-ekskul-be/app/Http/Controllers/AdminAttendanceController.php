@@ -214,4 +214,32 @@ class AdminAttendanceController extends Controller
             ]
         ], 200);
     }
+    public function getMentorRecap(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date|after_or_equal:start_date'
+        ]);
+
+        $startDate = Carbon::parse($request->query('start_date'))->startOfDay();
+        $endDate = Carbon::parse($request->query('end_date'))->endOfDay();
+
+        $rekap = DB::table('attendances')
+            ->join('users', 'attendances.recorder_id', '=', 'users.id')
+            ->join('exculs', 'attendances.excul_id', '=', 'exculs.id')
+            ->whereBetween('attendances.date', [$startDate, $endDate])
+            ->select(
+                'users.id as id_mentor',
+                'users.name as nama_pelatih',
+                'exculs.name as nama_ekskul',
+                DB::raw('COUNT(DISTINCT DATE(attendances.date)) as total_hadir_mengajar')
+            )
+            ->groupBy('users.id', 'users.name', 'exculs.id', 'exculs.name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $rekap
+        ], 200);
+    }
 }
