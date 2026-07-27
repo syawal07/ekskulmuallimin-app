@@ -9,7 +9,7 @@ class ExculController extends Controller
 {
     public function index()
     {
-        $exculs = Excul::withCount('students')->orderBy('name', 'asc')->get();
+        $exculs = Excul::withCount('students')->orderBy('kategori', 'desc')->orderBy('name', 'asc')->get();
 
         return response()->json([
             'success' => true,
@@ -21,12 +21,14 @@ class ExculController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'location' => 'nullable|in:INDUK,TERPADU'
+            'location' => 'nullable|in:INDUK,TERPADU',
+            'kategori' => 'nullable|in:Wajib,Pilihan'
         ]);
 
         $excul = Excul::create([
             'name' => $request->name,
-            'location' => $request->location ?? 'INDUK'
+            'location' => $request->location ?? 'INDUK',
+            'kategori' => $request->kategori ?? 'Pilihan'
         ]);
 
         return response()->json([
@@ -39,7 +41,8 @@ class ExculController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'location' => 'nullable|in:INDUK,TERPADU'
+            'location' => 'nullable|in:INDUK,TERPADU',
+            'kategori' => 'nullable|in:Wajib,Pilihan'
         ]);
 
         $excul = Excul::find($id);
@@ -53,7 +56,8 @@ class ExculController extends Controller
 
         $excul->update([
             'name' => $request->name,
-            'location' => $request->location ?? $excul->location
+            'location' => $request->location ?? $excul->location,
+            'kategori' => $request->kategori ?? $excul->kategori
         ]);
 
         return response()->json([

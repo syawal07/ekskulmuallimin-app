@@ -17,7 +17,7 @@ import { Loader2, Plus, Pencil } from "lucide-react"
 
 interface ExculModalProps {
   mode: "create" | "edit"
-  exculData?: { id: string; name: string }
+  exculData?: { id: string; name: string; kategori?: string }
 }
 
 export default function ExculModal({ mode, exculData }: ExculModalProps) {
@@ -60,7 +60,7 @@ export default function ExculModal({ mode, exculData }: ExculModalProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Tambah Ekskul Baru" : "Edit Nama Ekskul"}</DialogTitle>
+          <DialogTitle>{mode === "create" ? "Tambah Ekskul Baru" : "Edit Data Ekskul"}</DialogTitle>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4 pt-4">
           <div className="space-y-2">
@@ -72,6 +72,19 @@ export default function ExculModal({ mode, exculData }: ExculModalProps) {
               placeholder="Contoh: Robotik, Futsal..."
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="kategori">Kategori Ekskul</Label>
+            <select
+              id="kategori"
+              name="kategori"
+              defaultValue={exculData?.kategori || "Pilihan"}
+              required
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <option value="Wajib">Ekskul Wajib</option>
+              <option value="Pilihan">Ekskul Pilihan</option>
+            </select>
           </div>
           <div className="flex justify-end pt-2">
             <Button type="submit" disabled={loading}>

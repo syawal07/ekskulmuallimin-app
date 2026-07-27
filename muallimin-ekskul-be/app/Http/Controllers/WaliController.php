@@ -199,4 +199,120 @@ class WaliController extends Controller
             ]
         ], 200);
     }
+    public function leger(Request $request)
+    {
+        try {
+            $activeYear = AcademicYear::where('is_active', true)->first();
+            $studentId = $request->user()->id;
+
+            $attendanceHasYear = Schema::hasColumn('attendances', 'academic_year_id');
+
+            $student = Student::with([
+                'exculs' => function($q) use ($activeYear) {
+                    if ($activeYear) $q->where('excul_student.academic_year_id', $activeYear->id);
+                },
+                'attendances' => function($q) use ($activeYear, $attendanceHasYear) {
+                    if ($activeYear && $attendanceHasYear) $q->where('academic_year_id', $activeYear->id);
+                },
+                'perkaderans' => function($q) use ($activeYear) {
+                    if ($activeYear) $q->where('tahun_ajaran', $activeYear->name);
+                },
+                'perkaderans.perkaderan',
+                'perkaderans.attendances'
+            ])->find($studentId);
+
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Data Induk Siswa tidak ditemukan."
+                ], 404);
+            }
+
+            $ekstraWajib = [];
+            $ekstraPilihan = [];
+
+            foreach ($student->exculs as $excul) {
+                $exculAttendances = $student->attendances->where('excul_id', $excul->id);
+                
+                $hadir = $exculAttendances->filter(function($att) { return strtoupper($att->status) === 'HADIR'; })->count();
+                $izin = $exculAttendances->filter(function($att) { return strtoupper($att->status) === 'IZIN'; })->count();
+                $sakit = $exculAttendances->filter(function($att) { return strtoupper($att->status) === 'SAKIT'; })->count();
+                $alpha = $exculAttendances->filter(function($att) { return strtoupper($att->status) === 'ALPHA'; })->count();
+                $total = $exculAttendances->count();
+                
+                $persentase = $total > 0 ? round(($hadir / $total) * 100) : 0;
+
+               $dataRekap = [
+                    'id' => $excul->id,
+                    'nama_kegiatan' => $excul->name,
+                    'hadir' => $hadir,
+                    'izin' => $izin,
+                    'sakit' => $sakit,
+                    'alpha' => $alpha,
+                    'total_pertemuan' => $total,
+                    'persentase' => $persentase
+                ];
+
+                // --- ROBUST FILTERING ---
+                $kategoriDb = strtolower($excul->kategori ?? '');
+                $namaEkskul = strtolower($excul->name);
+                
+                // Otomatis deteksi Ekstra Wajib dari database ATAU dari namanya
+                $isWajib = ($kategoriDb === 'wajib') || 
+                           str_contains($namaEkskul, 'wajib') || 
+                           str_contains($namaEkskul, 'ts ') || 
+                           str_contains($namaEkskul, 'tapak suci') || 
+                           str_contains($namaEkskul, 'hw ') || 
+                           str_contains($namaEkskul, 'hizbul wathan');
+
+                if ($isWajib) {
+                    $ekstraWajib[] = $dataRekap;
+                } else {
+                    $ekstraPilihan[] = $dataRekap;
+                }
+            }
+
+            $perkaderanData = [];
+
+            foreach ($student->perkaderans as $pkStudent) {
+                $pkAttendances = $pkStudent->attendances ?? collect();
+                
+                $hadir = $pkAttendances->filter(function($att) { return strtoupper($att->status) === 'HADIR'; })->count();
+                $izin = $pkAttendances->filter(function($att) { return strtoupper($att->status) === 'IZIN'; })->count();
+                $sakit = $pkAttendances->filter(function($att) { return strtoupper($att->status) === 'SAKIT'; })->count();
+                $alpha = $pkAttendances->filter(function($att) { return in_array(strtoupper($att->status), ['ALPA', 'ALPHA']); })->count();
+                $total = $pkAttendances->count();
+
+                $persentase = $total > 0 ? round(($hadir / $total) * 100) : 0;
+
+                $perkaderanData[] = [
+                    'id' => $pkStudent->id,
+                    'nama_kegiatan' => $pkStudent->perkaderan ? $pkStudent->perkaderan->nama_jenjang : '-',
+                    'hadir' => $hadir,
+                    'izin' => $izin,
+                    'sakit' => $sakit,
+                    'alpha' => $alpha,
+                    'total_pertemuan' => $total,
+                    'persentase' => $persentase
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'tahun_pelajaran' => $activeYear ? $activeYear->name : '-',
+                    'semester' => $activeYear ? $activeYear->semester : '-',
+                    'ekstra_wajib' => $ekstraWajib,
+                    'ekstra_pilihan' => $ekstraPilihan,
+                    'perkaderan' => $perkaderanData
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

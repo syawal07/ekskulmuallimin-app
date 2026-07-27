@@ -22,6 +22,7 @@ export interface StudentData {
 export interface PrestasiData {
   id: number;
   student_id: string;
+  kategori: string;
   nama_lomba: string;
   tingkat: string;
   peringkat: string;
@@ -41,6 +42,7 @@ export default function PrestasiModal({
   const isEdit = !!initialData
   
   const [selectedStudent, setSelectedStudent] = useState<string>(initialData?.student_id?.toString() || "")
+  const [kategori, setKategori] = useState<string>(initialData?.kategori || "Lomba")
 
   const action = isEdit && initialData ? updateAchievement.bind(null, initialData.id.toString()) : createAchievement
   const [state, formAction] = useActionState(action, null)
@@ -49,7 +51,10 @@ export default function PrestasiModal({
     if (state?.success) {
       const timer = setTimeout(() => {
         setOpen(false)
-        if (!isEdit) setSelectedStudent("")
+        if (!isEdit) {
+          setSelectedStudent("")
+          setKategori("Lomba")
+        }
       }, 50)
       return () => clearTimeout(timer)
     }
@@ -60,7 +65,10 @@ export default function PrestasiModal({
   return (
     <Dialog open={open} onOpenChange={(val) => {
       setOpen(val)
-      if (!val && !isEdit) setSelectedStudent("")
+      if (!val && !isEdit) {
+        setSelectedStudent("")
+        setKategori("Lomba")
+      }
     }}>
       <DialogTrigger asChild>
         {isEdit ? (
@@ -136,12 +144,25 @@ export default function PrestasiModal({
           </div>
 
           <div className="space-y-2">
-            <Label>Nama Perlombaan / Penghargaan</Label>
+            <Label>Kategori Prestasi</Label>
+            <Select name="kategori" value={kategori} onValueChange={setKategori}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih Kategori" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Lomba">Lomba / Kejuaraan</SelectItem>
+                <SelectItem value="Tahfidz">Hafalan (Tahfidz)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{kategori === 'Tahfidz' ? 'Capaian Hafalan (Contoh: Juz 30)' : 'Nama Perlombaan / Penghargaan'}</Label>
             <Input 
               name="nama_lomba" 
               defaultValue={initialData?.nama_lomba} 
               required 
-              placeholder="Contoh: Olimpiade Sains Nasional (OSN) Matematika"
+              placeholder={kategori === 'Tahfidz' ? "Contoh: Lulus Ujian Tahfidz Juz 30" : "Contoh: Olimpiade Sains Nasional Matematika"}
             />
           </div>
 
@@ -167,7 +188,7 @@ export default function PrestasiModal({
                 name="peringkat" 
                 defaultValue={initialData?.peringkat} 
                 required 
-                placeholder="Contoh: 1 / Medali Emas"
+                placeholder={kategori === 'Tahfidz' ? "Contoh: Mumtaz / Jayyid" : "Contoh: 1 / Medali Emas"}
               />
             </div>
           </div>

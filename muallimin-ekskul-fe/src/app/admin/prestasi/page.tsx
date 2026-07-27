@@ -8,15 +8,16 @@ import { getToken } from "@/lib/session"
 
 export const dynamic = "force-dynamic"
 
-interface Achievement {
+export interface Achievement {
   id: number;
   student_id: string;
+  kategori: string; 
   nama_lomba: string;
   tingkat: string;
   peringkat: string;
   tanggal: string;
-  penyelenggara: string | null;
-  student: {
+  penyelenggara?: string | null;
+  student?: {
     name: string;
     class: string;
   };

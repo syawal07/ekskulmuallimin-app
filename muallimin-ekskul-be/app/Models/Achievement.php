@@ -8,6 +8,7 @@ class Achievement extends Model
 {
     protected $fillable = [
         'student_id',
+        'kategori',
         'nama_lomba',
         'tingkat',
         'peringkat',

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, LogOut, Menu, X, User } from "lucide-react"
+import { LayoutDashboard, LogOut, Menu, X, User, Medal, FileSpreadsheet } from "lucide-react"
 import { logoutAction } from "@/actions/authAction"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
@@ -16,6 +16,8 @@ export interface ProfileData {
 
 const navItems = [
   { name: "Dashboard Wali", href: "/wali/dashboard", icon: LayoutDashboard },
+  { name: "Data Prestasi", href: "/wali/prestasi", icon: Medal },
+  { name: "Leger Santri", href: "/wali/leger", icon: FileSpreadsheet },
 ]
 
 function SidebarContent({
@@ -38,11 +40,11 @@ function SidebarContent({
         <div className="flex items-center gap-4 w-full">
           <div className="bg-gradient-to-tr from-blue-600 to-indigo-500 p-[2px] rounded-2xl shadow-lg shadow-blue-500/20 shrink-0">
             <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-[14px] flex items-center justify-center w-10 h-10">
-              <Image 
-                src={logoUrlFromDb} 
-                alt="Logo" 
-                width={32} 
-                height={32} 
+              <Image
+                src={logoUrlFromDb}
+                alt="Logo"
+                width={32}
+                height={32}
                 className="object-contain w-full h-full"
               />
             </div>
@@ -59,6 +61,7 @@ function SidebarContent({
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href
+
           return (
             <Link
               key={item.name}
@@ -89,9 +92,9 @@ function SidebarContent({
             </div>
           </div>
           <form action={logoutAction}>
-            <Button 
-              type="submit" 
-              variant="ghost" 
+            <Button
+              type="submit"
+              variant="ghost"
               className="w-full justify-center gap-2 bg-red-50/50 hover:bg-red-500 hover:text-white text-red-600 border border-red-100/50 rounded-2xl h-11 font-bold transition-all duration-300 shadow-sm hover:shadow-red-500/25"
             >
               <LogOut className="w-4 h-4" />
@@ -118,39 +121,37 @@ export default function WaliLayoutClient({
 
   return (
     <div className="flex min-h-screen font-sans selection:bg-blue-200 selection:text-blue-900 bg-slate-50 relative overflow-hidden">
-      
       <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-200/40 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-200/40 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="fixed top-[40%] right-[10%] w-[20%] h-[20%] bg-amber-100/30 rounded-full blur-[100px] pointer-events-none"></div>
 
       <aside className="hidden md:flex w-72 flex-col fixed inset-y-0 z-20 bg-white/40 backdrop-blur-2xl border-r border-white/60 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-        <SidebarContent 
-          pathname={pathname} 
-          setIsMobileMenuOpen={setIsMobileMenuOpen} 
-          user={user} 
+        <SidebarContent
+          pathname={pathname}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+          user={user}
           profile={profile}
         />
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 md:pl-72 transition-all duration-300 ease-in-out relative z-10">
-        
         <header className="md:hidden bg-white/60 backdrop-blur-xl border-b border-white/50 sticky top-0 z-30 flex items-center justify-between px-5 h-16 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="bg-gradient-to-tr from-blue-600 to-indigo-500 p-[1.5px] rounded-lg shadow-sm">
               <div className="bg-white/90 p-1 rounded-[6px] flex items-center justify-center">
-                <Image 
-                  src={profile?.logo_url ? `${process.env.NEXT_PUBLIC_API_BACKEND_URL?.replace('/api', '')}/storage/${profile.logo_url}` : "/logo.png"} 
-                  alt="Logo" 
-                  width={20} 
-                  height={20} 
+                <Image
+                  src={profile?.logo_url ? `${process.env.NEXT_PUBLIC_API_BACKEND_URL?.replace('/api', '')}/storage/${profile.logo_url}` : "/logo.png"}
+                  alt="Logo"
+                  width={20}
+                  height={20}
                   className="object-contain"
                 />
               </div>
             </div>
             <span className="font-extrabold text-lg text-slate-800 tracking-tight">Kesiswaan</span>
           </div>
-          <button 
-            onClick={() => setIsMobileMenuOpen(true)} 
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
             className="text-slate-600 hover:text-blue-700 p-2 focus:outline-none bg-white/50 hover:bg-white/80 rounded-xl transition-all duration-300 border border-white/60 shadow-sm"
           >
             <Menu className="w-5 h-5" />
@@ -166,21 +167,21 @@ export default function WaliLayoutClient({
 
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          <div 
-            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity animate-in fade-in duration-300" 
+          <div
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
             onClick={() => setIsMobileMenuOpen(false)}
           ></div>
           <div className="relative flex-1 flex flex-col max-w-[280px] w-full bg-white/70 backdrop-blur-2xl shadow-2xl animate-in slide-in-from-left duration-500 ease-out border-r border-white/50">
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="absolute top-4 -right-14 text-slate-700 bg-white/50 hover:bg-white/80 p-2.5 rounded-full backdrop-blur-md transition-all border border-white/60 shadow-sm"
             >
               <X className="w-5 h-5" />
             </button>
-            <SidebarContent 
-              pathname={pathname} 
-              setIsMobileMenuOpen={setIsMobileMenuOpen} 
-              user={user} 
+            <SidebarContent
+              pathname={pathname}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
+              user={user}
               profile={profile}
             />
           </div>

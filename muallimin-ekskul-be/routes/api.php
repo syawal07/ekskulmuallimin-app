@@ -162,5 +162,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/wali/dashboard', [App\Http\Controllers\WaliController::class, 'dashboard']);
     Route::get('/wali/attendances', [App\Http\Controllers\WaliController::class, 'attendances']);
     Route::get('/wali/assessments', [App\Http\Controllers\WaliController::class, 'assessments']);
+    Route::get('/wali/leger', [App\Http\Controllers\WaliController::class, 'leger']);
 
 });

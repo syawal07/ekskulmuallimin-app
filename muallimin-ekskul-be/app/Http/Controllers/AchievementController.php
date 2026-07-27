@@ -15,6 +15,10 @@ class AchievementController extends Controller
             $query->where('student_id', $request->student_id);
         }
 
+        if ($request->has('kategori') && $request->kategori != '') {
+            $query->where('kategori', $request->kategori);
+        }
+
         $achievements = $query->orderBy('tanggal', 'desc')->get();
 
         return response()->json([
@@ -27,6 +31,7 @@ class AchievementController extends Controller
     {
         $request->validate([
             'student_id' => 'required|exists:students,id',
+            'kategori' => 'nullable|in:Lomba,Tahfidz',
             'nama_lomba' => 'required|string|max:255',
             'tingkat' => 'required|string|max:100',
             'peringkat' => 'required|string|max:100',
@@ -34,7 +39,12 @@ class AchievementController extends Controller
             'penyelenggara' => 'nullable|string|max:255'
         ]);
 
-        $achievement = Achievement::create($request->all());
+        $data = $request->all();
+        if (!isset($data['kategori'])) {
+            $data['kategori'] = 'Lomba';
+        }
+
+        $achievement = Achievement::create($data);
 
         return response()->json([
             'success' => true,
@@ -52,6 +62,7 @@ class AchievementController extends Controller
 
         $request->validate([
             'student_id' => 'required|exists:students,id',
+            'kategori' => 'nullable|in:Lomba,Tahfidz',
             'nama_lomba' => 'required|string|max:255',
             'tingkat' => 'required|string|max:100',
             'peringkat' => 'required|string|max:100',
@@ -59,7 +70,12 @@ class AchievementController extends Controller
             'penyelenggara' => 'nullable|string|max:255'
         ]);
 
-        $achievement->update($request->all());
+        $data = $request->all();
+        if (!isset($data['kategori'])) {
+            $data['kategori'] = 'Lomba';
+        }
+
+        $achievement->update($data);
 
         return response()->json([
             'success' => true,

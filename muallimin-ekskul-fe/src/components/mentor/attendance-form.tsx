@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -40,6 +40,16 @@ type AttendanceRecord = {
   proofImageUrl?: string | null
 }
 
+const getImageUrl = (path?: string | null) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  let baseUrl = process.env.NEXT_PUBLIC_STORAGE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BACKEND_URL || '';
+  baseUrl = baseUrl.replace(/\/api$/, '');
+  baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${baseUrl}${cleanPath}`;
+}
+
 export default function AttendanceForm({ 
   students, 
   allStudents = [],
@@ -61,13 +71,16 @@ export default function AttendanceForm({
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
-
-  const [localData, setLocalData] = useState<Record<string, { status: string, notes: string }>>({})
   
+  const [localData, setLocalData] = useState<Record<string, { status: string, notes: string }>>({})
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isAddingStudent, setIsAddingStudent] = useState(false)
   const [openCombobox, setOpenCombobox] = useState(false)
   const [selectedNewStudent, setSelectedNewStudent] = useState<string>("")
+
+  const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null)
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const filteredStudents = students.filter(student => 
     student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -81,7 +94,6 @@ export default function AttendanceForm({
   )
 
   const existingProof = initialData.find(d => d.proofImageUrl)?.proofImageUrl
-
   const defaultDate = initialDate 
     ? typeof initialDate === 'string' ? initialDate.substring(0, 10) : new Date(initialDate).toISOString().substring(0, 10)
     : new Date().toISOString().substring(0, 10)
@@ -140,6 +152,29 @@ export default function AttendanceForm({
     toast.success(`Berhasil mengatur semua santri menjadi ${status === 'HADIR' ? 'Hadir' : 'Alpha'}`)
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Ukuran foto terlalu besar! Maksimal 5MB.")
+        e.target.value = ""
+        setSelectedImagePreview(null)
+        setSelectedFileName(null)
+        return
+      }
+      setSelectedImagePreview(URL.createObjectURL(file))
+      setSelectedFileName(file.name)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setSelectedImagePreview(null)
+    setSelectedFileName(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -180,7 +215,6 @@ export default function AttendanceForm({
       toast.error("Silakan cari dan pilih nama santri dari daftar.")
       return
     }
-
     setIsAddingStudent(true)
     const formData = new FormData(e.currentTarget)
     formData.append("student_id", selectedNewStudent)
@@ -256,16 +290,42 @@ export default function AttendanceForm({
                     type="file" 
                     name="proofImage" 
                     accept="image/png, image/jpeg, image/jpg, image/webp"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    className={cn(
+                      "absolute inset-0 w-full h-full opacity-0 cursor-pointer",
+                      selectedImagePreview ? "z-0" : "z-10"
+                    )}
+                    onChange={handleImageChange}
+                    ref={fileInputRef}
                   />
                   
-                  {existingProof ? (
+                  {selectedImagePreview ? (
+                    <div className="flex flex-col items-center justify-center gap-3 w-full h-full relative z-20 pointer-events-none">
+                      <div className="relative w-4/5 h-28 rounded-lg overflow-hidden shadow-md border-2 border-emerald-500">
+                        <Image src={selectedImagePreview} alt="Preview Baru" fill className="object-cover" />
+                      </div>
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full shadow-sm border border-emerald-100 truncate max-w-full">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{selectedFileName}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          handleRemoveImage()
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 z-30 shadow-md transition-colors pointer-events-auto"
+                        title="Batal pilih foto"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : existingProof ? (
                     <div className="flex flex-col items-center justify-center gap-3 w-full h-full z-0">
                       <div className="absolute inset-0 w-full h-full opacity-20">
-                        <Image src={existingProof} alt="Bukti blur" fill className="object-cover blur-sm" />
+                        <Image src={getImageUrl(existingProof)} alt="Bukti blur" fill className="object-cover blur-sm" />
                       </div>
                       <div className="relative w-4/5 h-32 rounded-lg overflow-hidden shadow-md border-2 border-white">
-                        <Image src={existingProof} alt="Bukti Sesi" fill className="object-cover" />
+                        <Image src={getImageUrl(existingProof)} alt="Bukti Sesi" fill className="object-cover" />
                       </div>
                       <span className="relative z-0 text-xs font-semibold text-primary bg-primary/10 px-4 py-1.5 rounded-full shadow-sm">
                         Ketuk untuk mengganti foto
@@ -305,7 +365,6 @@ export default function AttendanceForm({
                   >
                     <Plus className="w-4 h-4 mr-2" /> Tambah Siswa
                   </Button>
-
                   <div className="relative w-full sm:w-64">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                     <Input 
@@ -364,7 +423,6 @@ export default function AttendanceForm({
               </div>
             </div>
           </CardHeader>
-
           <CardContent className="pt-6">
             <div className="space-y-4">
               {paginatedStudents.length === 0 ? (
@@ -382,7 +440,7 @@ export default function AttendanceForm({
                       <div className="flex-1">
                         <p className="font-bold text-slate-900 text-base leading-tight line-clamp-1">{student.name}</p>
                         <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                          Kelas {student.class} {student.nis ? ` • NIS: ${student.nis}` : ''}
+                          Kelas {student.class} {student.nis ? `   NIS: ${student.nis}` : ''}
                         </p>
                       </div>
                     </div>

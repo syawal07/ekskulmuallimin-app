@@ -9,15 +9,13 @@ class Excul extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['name', 'location'];
+    protected $fillable = ['name', 'location', 'kategori'];
 
-    // Relasi: Ekskul diampu oleh guru siapa saja
     public function mentors()
     {
         return $this->belongsToMany(User::class, 'excul_user', 'excul_id', 'user_id');
     }
 
-    // Relasi: Siswa di ekskul ini (Sudah disesuaikan ke Pivot Table Phase 1)
     public function students()
     {
         return $this->belongsToMany(Student::class, 'excul_student', 'excul_id', 'student_id')

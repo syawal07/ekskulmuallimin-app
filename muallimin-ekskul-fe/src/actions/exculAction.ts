@@ -5,73 +5,67 @@ import { cookies } from "next/headers"
 
 export async function createExcul(formData: FormData) {
   const cookieStore = await cookies()
-  const role = cookieStore.get("user_role")?.value
   const token = cookieStore.get("session_token")?.value
-  
-  if (role !== "ADMIN" || !token) return { error: "Unauthorized" }
 
-  const name = formData.get("name") as string
+  if (!token) return { error: "Unauthorized" }
 
-  if (!name) return { error: "Nama ekskul wajib diisi" }
+  const name = formData.get("name")
+  const location = formData.get("location") || "INDUK"
+  const kategori = formData.get("kategori") || "Pilihan"
 
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
-    const res = await fetch(`${apiUrl}/admin/exculs`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL}/admin/exculs`, {
       method: "POST",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
-      body: JSON.stringify({ name: name, location: "INDUK" })
-    });
+      body: JSON.stringify({ name, location, kategori }),
+    })
 
-    const data = await res.json();
+    const data = await res.json()
 
     if (!res.ok) {
       return { error: data.message || "Gagal membuat ekskul" }
     }
 
-    revalidatePath("/admin/ekskul")
-    return { success: true }
-  } catch (err) {
-    console.error(err) 
-    return { error: "Server Backend bermasalah" }
+    revalidatePath('/admin/master/excul')
+    return { success: true, data }
+  } catch (error) {
+    return { error: "Terjadi kesalahan server" }
   }
 }
 
 export async function updateExcul(id: string, formData: FormData) {
   const cookieStore = await cookies()
-  const role = cookieStore.get("user_role")?.value
   const token = cookieStore.get("session_token")?.value
-  
-  if (role !== "ADMIN" || !token) return { error: "Unauthorized" }
 
-  const name = formData.get("name") as string
+  if (!token) return { error: "Unauthorized" }
+
+  const name = formData.get("name")
+  const location = formData.get("location") || "INDUK"
+  const kategori = formData.get("kategori")
 
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
-    const res = await fetch(`${apiUrl}/admin/exculs/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL}/admin/exculs/${id}`, {
       method: "PUT",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
-      body: JSON.stringify({ name: name })
-    });
+      body: JSON.stringify({ name, location, kategori }),
+    })
 
-    const data = await res.json();
+    const data = await res.json()
 
     if (!res.ok) {
-        return { error: data.message || "Gagal update ekskul" }
+      return { error: data.message || "Gagal mengupdate ekskul" }
     }
 
-    revalidatePath("/admin/ekskul")
-    return { success: true }
-  } catch (err) {
-    console.error(err)
-    return { error: "Server Backend bermasalah" }
+    revalidatePath('/admin/master/excul')
+    return { success: true, data }
+  } catch (error) {
+    return { error: "Terjadi kesalahan server" }
   }
 }
 
