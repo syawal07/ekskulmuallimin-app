@@ -257,13 +257,10 @@ class WaliController extends Controller
                 $kategoriDb = strtolower($excul->kategori ?? '');
                 $namaEkskul = strtolower($excul->name);
                 
-                // Otomatis deteksi Ekstra Wajib dari database ATAU dari namanya
-                $isWajib = ($kategoriDb === 'wajib') || 
-                           str_contains($namaEkskul, 'wajib') || 
-                           str_contains($namaEkskul, 'ts ') || 
-                           str_contains($namaEkskul, 'tapak suci') || 
-                           str_contains($namaEkskul, 'hw ') || 
-                           str_contains($namaEkskul, 'hizbul wathan');
+                $isWajib = ($kategoriDb === 'wajib') ||
+                            str_contains($namaEkskul, 'wajib') ||
+                            str_contains($namaEkskul, 'hw ') ||
+                            str_contains($namaEkskul, 'hizbul wathan');
 
                 if ($isWajib) {
                     $ekstraWajib[] = $dataRekap;

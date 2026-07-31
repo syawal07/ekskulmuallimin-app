@@ -163,7 +163,7 @@ class AdminAttendanceController extends Controller
             $query->where('attendances.excul_id', $exculId);
         }
 
-        $paginatedSessions = $query->orderBy('session_date', 'desc')->paginate(10);
+        $paginatedSessions = $query->orderBy('session_date', 'desc')->paginate(12);
         $sessionsData = [];
 
         foreach ($paginatedSessions as $sessionGroup) {
