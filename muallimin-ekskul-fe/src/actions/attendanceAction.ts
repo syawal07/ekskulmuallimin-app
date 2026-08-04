@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { getToken } from "@/lib/session"
 
@@ -37,12 +36,12 @@ export async function submitAttendance(formData: FormData) {
     revalidatePath("/mentor/dashboard")
     revalidatePath("/mentor/riwayat")
     
+    return { success: true }
+    
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal presensi"
     return { error: "Terjadi kesalahan server: " + message }
   }
-
-  redirect("/mentor/riwayat?success=true")
 }
 
 export async function deleteAttendanceSession(dateStr: string, exculId: string) {
@@ -68,11 +67,11 @@ export async function deleteAttendanceSession(dateStr: string, exculId: string) 
     revalidatePath("/mentor/riwayat")
     revalidatePath("/mentor/dashboard")
     
+    return { success: true }
+    
   } catch (error) {
     return { error: "Server Backend bermasalah." }
   }
-
-  redirect("/mentor/riwayat")
 }
 
 export async function fetchMonthlyAttendanceRecap(exculId: string, startDate: string, endDate: string, page: number = 1) {

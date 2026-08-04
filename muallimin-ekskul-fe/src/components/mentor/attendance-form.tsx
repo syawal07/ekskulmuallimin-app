@@ -1,5 +1,5 @@
 "use client";
-
+import { useRouter } from "next/navigation"
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,6 +98,7 @@ export default function AttendanceForm({
   initialData?: AttendanceRecord[];
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -258,11 +259,12 @@ export default function AttendanceForm({
 
       const result = await submitAttendance(formData);
 
-      if (result?.error) {
-        toast.error(result.error);
+     if (result?.error) {
+        toast.error(result.error)
       } else {
-        localStorage.removeItem(draftKey);
-        toast.success("Presensi berhasil disimpan!");
+        localStorage.removeItem(draftKey)
+        toast.success("Presensi berhasil disimpan!")
+        router.push("/mentor/riwayat?success=true")
       }
     } catch (error) {
       toast.error("Terjadi gangguan jaringan. Data Anda aman sebagai draf.");
