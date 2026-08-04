@@ -274,18 +274,25 @@ export default function AttendanceForm({
     }
   };
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    const res = await deleteAttendanceSession(defaultDate, exculId);
-
-    if (res?.error) {
-      toast.error(res.error);
-      setIsDeleting(false);
-      setIsDeleteOpen(false);
-    } else {
-      toast.success("Sesi berhasil dihapus");
+const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      const res = await deleteAttendanceSession(defaultDate, exculId)
+      
+      if (res?.error) {
+        toast.error(res.error)
+      } else {
+        toast.success("Sesi berhasil dihapus")
+        setIsDeleteOpen(false)
+        router.push("/mentor/riwayat")
+      }
+    } catch (error) {
+      toast.error("Terjadi gangguan jaringan saat menghapus data.")
+      console.error(error)
+    } finally {
+      setIsDeleting(false)
     }
-  };
+  }
 
   const handleAddStudent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
