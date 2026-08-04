@@ -181,6 +181,7 @@ public function store(Request $request)
                         }
                     } else {
                         $insertData[] = [
+                            'id' => (string) \Illuminate\Support\Str::uuid(),
                             'date' => $date,
                             'status' => $status,
                             'notes' => $notes,
