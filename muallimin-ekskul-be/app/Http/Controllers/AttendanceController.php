@@ -154,25 +154,33 @@ public function store(Request $request)
         try {
             $allInputs = $request->all();
             
+            $existingRecords = Attendance::where('excul_id', $exculId)
+                ->whereBetween('date', [$date->copy()->startOfDay(), $date->copy()->endOfDay()])
+                ->get()
+                ->keyBy('student_id');
+
+            $insertData = [];
+            $now = Carbon::now();
+            
             foreach ($allInputs as $key => $status) {
                 if (str_starts_with($key, 'status-')) {
                     $studentId = str_replace('status-', '', $key);
                     $notes = $request->input("notes-{$studentId}", '');
 
-                    $existing = Attendance::where('student_id', $studentId)
-                        ->where('excul_id', $exculId)
-                        ->whereBetween('date', [$date->copy()->startOfDay(), $date->copy()->endOfDay()])
-                        ->first();
-
-                    if ($existing) {
-                        $existing->update([
-                            'status' => $status,
-                            'notes' => $notes,
-                            'recorder_id' => $userId,
-                            'proof_image_url' => $proofImageUrl ?: $existing->proof_image_url
-                        ]);
+                    if ($existingRecords->has($studentId)) {
+                        $existing = $existingRecords->get($studentId);
+                        $finalProofUrl = $proofImageUrl ?: $existing->proof_image_url;
+                        
+                        if ($existing->status !== $status || $existing->notes !== $notes || $existing->proof_image_url !== $finalProofUrl) {
+                            Attendance::where('id', $existing->id)->update([
+                                'status' => $status,
+                                'notes' => $notes,
+                                'recorder_id' => $userId,
+                                'proof_image_url' => $finalProofUrl
+                            ]);
+                        }
                     } else {
-                        Attendance::create([
+                        $insertData[] = [
                             'date' => $date,
                             'status' => $status,
                             'notes' => $notes,
@@ -180,10 +188,16 @@ public function store(Request $request)
                             'recorder_id' => $userId,
                             'excul_id' => $exculId,
                             'academic_year_id' => $activeYear->id,
-                            'proof_image_url' => $proofImageUrl
-                        ]);
+                            'proof_image_url' => $proofImageUrl,
+                            'created_at' => $now,
+                            'updated_at' => $now
+                        ];
                     }
                 }
+            }
+            
+            if (!empty($insertData)) {
+                Attendance::insert($insertData);
             }
             
             DB::commit();
