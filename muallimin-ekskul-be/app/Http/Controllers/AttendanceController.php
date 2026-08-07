@@ -154,10 +154,18 @@ public function store(Request $request)
         try {
             $allInputs = $request->all();
             
-            $existingRecords = Attendance::where('excul_id', $exculId)
+            // Ambil data lama sekaligus
+            $existingRecordsList = Attendance::where('excul_id', $exculId)
                 ->whereBetween('date', [$date->copy()->startOfDay(), $date->copy()->endOfDay()])
-                ->get()
-                ->keyBy('student_id');
+                ->get();
+                
+            $existingRecords = $existingRecordsList->keyBy('student_id');
+
+            // --- LOGIKA BARU: DISTRIBUSI KEPEMILIKAN ---
+            // Kumpulkan ID pelatih yang sudah ada di database, lalu tambahkan ID pelatih yang sedang klik simpan
+            $recorders = $existingRecordsList->pluck('recorder_id')->push($userId)->unique()->values()->toArray();
+            $recorderCount = count($recorders);
+            $studentIndex = 0;
 
             $insertData = [];
             $now = Carbon::now();
@@ -167,15 +175,20 @@ public function store(Request $request)
                     $studentId = str_replace('status-', '', $key);
                     $notes = $request->input("notes-{$studentId}", '');
 
+                    // Tentukan pelatih mana yang akan dikunci pada baris siswa ini (bergantian / round-robin)
+                    $assignedRecorderId = $recorders[$studentIndex % $recorderCount];
+                    $studentIndex++;
+
                     if ($existingRecords->has($studentId)) {
                         $existing = $existingRecords->get($studentId);
                         $finalProofUrl = $proofImageUrl ?: $existing->proof_image_url;
                         
-                        if ($existing->status !== $status || $existing->notes !== $notes || $existing->proof_image_url !== $finalProofUrl) {
+                        // Pembaruan dilakukan jika status berubah ATAU jika kepemilikan perlu didistribusikan ulang
+                        if ($existing->status !== $status || $existing->notes !== $notes || $existing->proof_image_url !== $finalProofUrl || $existing->recorder_id !== $assignedRecorderId) {
                             Attendance::where('id', $existing->id)->update([
                                 'status' => $status,
                                 'notes' => $notes,
-                                'recorder_id' => $userId,
+                                'recorder_id' => $assignedRecorderId,
                                 'proof_image_url' => $finalProofUrl
                             ]);
                         }
@@ -186,7 +199,7 @@ public function store(Request $request)
                             'status' => $status,
                             'notes' => $notes,
                             'student_id' => $studentId,
-                            'recorder_id' => $userId,
+                            'recorder_id' => $assignedRecorderId, // Menggunakan ID yang sudah didistribusikan
                             'excul_id' => $exculId,
                             'academic_year_id' => $activeYear->id,
                             'proof_image_url' => $proofImageUrl,

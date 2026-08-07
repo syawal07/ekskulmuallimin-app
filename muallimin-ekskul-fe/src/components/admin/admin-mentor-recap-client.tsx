@@ -6,7 +6,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Calendar, Filter, Users, FileSpreadsheet, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import * as XLSX from "xlsx"
 import { fetchMentorRecap } from "@/actions/attendanceAction"
 
 const formatDateLocal = (date: Date) => {
@@ -36,10 +35,10 @@ const getCurrentCutoff = () => {
 }
 
 interface MentorRecapData {
-  id_mentor: string
   nama_pelatih: string
   nama_ekskul: string
-  total_hadir_mengajar: number
+  total_hadir: number
+  tanggal_mengajar: string
 }
 
 function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
@@ -67,7 +66,7 @@ export default function AdminMentorRecapClient() {
     }
     setLoading(true)
     setHasSearched(true)
-
+    
     const res = await fetchMentorRecap(startDate, endDate)
     
     if (res?.error) {
@@ -83,22 +82,9 @@ export default function AdminMentorRecapClient() {
 
   const handleExportExcel = () => {
     if (dataList.length === 0) return
-
-    const formattedData = dataList.map((item, index) => ({
-      "No": index + 1,
-      "Nama Pelatih": item.nama_pelatih,
-      "Mengampu Ekskul": item.nama_ekskul,
-      "Total Hadir (Hari)": item.total_hadir_mengajar
-    }))
-
-    const worksheet = XLSX.utils.json_to_sheet(formattedData)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Kehadiran Pelatih")
-    
-    const fileName = `Rekap_Kehadiran_Pelatih_${startDate}_sd_${endDate}.xlsx`
-    XLSX.writeFile(workbook, fileName)
-    
-    toast.success("File Excel berhasil diunduh!")
+    const baseUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL || ""
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
+    window.location.href = `${cleanBaseUrl}/admin/attendances/export-mentor-recap?start_date=${startDate}&end_date=${endDate}`
   }
 
   return (
@@ -160,24 +146,28 @@ export default function AdminMentorRecapClient() {
                     <TableHead className="w-[50px] text-center font-bold">No</TableHead>
                     <TableHead className="font-bold">Nama Pelatih</TableHead>
                     <TableHead className="font-bold">Mengampu Ekskul</TableHead>
-                    <TableHead className="text-center font-bold text-green-700">Total Kehadiran (Hari)</TableHead>
+                    <TableHead className="text-center font-bold text-green-700">Total Kehadiran</TableHead>
+                    <TableHead className="font-bold">Rincian Tanggal Mengajar</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {dataList.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-32 text-center text-slate-500">Belum ada pelatih yang melakukan input presensi pada periode ini.</TableCell>
+                      <TableCell colSpan={5} className="h-32 text-center text-slate-500">Belum ada pelatih yang melakukan input presensi pada periode ini.</TableCell>
                     </TableRow>
                   ) : (
                     dataList.map((data, index) => (
-                      <TableRow key={`${data.id_mentor}-${index}`} className="hover:bg-slate-50 transition-colors">
+                      <TableRow key={index} className="hover:bg-slate-50 transition-colors">
                         <TableCell className="text-center text-slate-500 font-medium">{index + 1}</TableCell>
                         <TableCell className="font-bold text-slate-900">{data.nama_pelatih}</TableCell>
                         <TableCell className="text-slate-600">{data.nama_ekskul}</TableCell>
                         <TableCell className="text-center">
                           <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-green-100 text-green-700 font-bold text-sm">
-                            {data.total_hadir_mengajar} Hari
+                            {data.total_hadir} Hari
                           </span>
+                        </TableCell>
+                        <TableCell className="text-slate-500 text-sm max-w-[250px] leading-relaxed">
+                          {data.tanggal_mengajar}
                         </TableCell>
                       </TableRow>
                     ))

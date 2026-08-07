@@ -242,4 +242,13 @@ class AdminAttendanceController extends Controller
             'data' => $rekap
         ], 200);
     }
+    public function exportMentorRecap(Request $request)
+    {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        
+        $fileName = 'Rekap_Kehadiran_Pelatih_' . Carbon::parse($startDate)->format('d-m-Y') . '_sd_' . Carbon::parse($endDate)->format('d-m-Y') . '.xlsx';
+        
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\MentorRecapExport($startDate, $endDate), $fileName);
+    }
 }
