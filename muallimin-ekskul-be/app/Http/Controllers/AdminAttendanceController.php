@@ -224,7 +224,7 @@ class AdminAttendanceController extends Controller
         $startDate = Carbon::parse($request->query('start_date'))->startOfDay();
         $endDate = Carbon::parse($request->query('end_date'))->endOfDay();
 
-        $rekap = DB::table('attendances')
+        $attendances = DB::table('attendances')
             ->join('users', 'attendances.recorder_id', '=', 'users.id')
             ->join('exculs', 'attendances.excul_id', '=', 'exculs.id')
             ->whereBetween('attendances.date', [$startDate, $endDate])
@@ -232,10 +232,24 @@ class AdminAttendanceController extends Controller
                 'users.id as id_mentor',
                 'users.name as nama_pelatih',
                 'exculs.name as nama_ekskul',
-                DB::raw('COUNT(DISTINCT DATE(attendances.date)) as total_hadir_mengajar')
+                DB::raw('DATE(attendances.date) as tanggal_mengajar')
             )
-            ->groupBy('users.id', 'users.name', 'exculs.id', 'exculs.name')
+            ->distinct()
+            ->orderBy('tanggal_mengajar', 'asc')
             ->get();
+
+        $rekap = $attendances->groupBy(function ($item) {
+            return $item->id_mentor . '_' . $item->nama_ekskul;
+        })->map(function ($items) {
+            $first = $items->first();
+            return [
+                'id_mentor' => $first->id_mentor,
+                'nama_pelatih' => $first->nama_pelatih,
+                'nama_ekskul' => $first->nama_ekskul,
+                'total_hadir_mengajar' => $items->count(),
+                'tanggal_mengajar' => $items->pluck('tanggal_mengajar')->toArray(),
+            ];
+        })->values();
 
         return response()->json([
             'success' => true,
