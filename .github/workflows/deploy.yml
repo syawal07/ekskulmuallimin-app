@@ -3,7 +3,7 @@ name: Deploy Frontend Kesiswaan
 on:
   push:
     branches:
-      - main # Ubah ke 'master' jika branch utama Anda bernama master
+      - main
 
 jobs:
   build-and-deploy:
@@ -19,16 +19,21 @@ jobs:
         node-version: '20'
 
     - name: Install Dependencies
-      run: npm install
+      run: |
+        cd muallimin-ekskul-fe
+        npm install
 
     - name: Generate .env File
       run: |
+        cd muallimin-ekskul-fe
         echo "NEXT_PUBLIC_API_BACKEND_URL=${{ secrets.NEXT_PUBLIC_API_BACKEND_URL }}" > .env
         echo "NEXT_PUBLIC_BACKEND_URL=${{ secrets.NEXT_PUBLIC_BACKEND_URL }}" >> .env
         echo "NEXT_PUBLIC_STORAGE_URL=${{ secrets.NEXT_PUBLIC_STORAGE_URL }}" >> .env
 
     - name: Build Next.js Application
-      run: npm run build
+      run: |
+        cd muallimin-ekskul-fe
+        npm run build
 
     - name: Transfer Files to Server (DirectAdmin)
       uses: appleboy/scp-action@master
@@ -37,8 +42,9 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         password: ${{ secrets.SERVER_PASSWORD }}
         port: 22
-        source: ".next,public,package.json,next.config.ts"
+        source: "muallimin-ekskul-fe/.next,muallimin-ekskul-fe/public,muallimin-ekskul-fe/package.json,muallimin-ekskul-fe/next.config.ts"
         target: "/home/muallimi/domains/kesiswaan.muallimin.sch.id/public_html/"
+        strip_components: 1 
         overwrite: true
 
     - name: Restart PM2 on Server
