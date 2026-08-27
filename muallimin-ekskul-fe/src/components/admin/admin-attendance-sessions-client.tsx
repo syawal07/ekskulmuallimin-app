@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar, Filter, Users, CalendarDays, ExternalLink, X, Loader2, Image as ImageIcon, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react"
@@ -159,8 +159,8 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
 
   return (
     <div className="space-y-6 mt-6">
-      <Card className="border-slate-200 shadow-sm">
-        <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-5">
+      <Card className="border-slate-200 shadow-sm py-0 gap-0 overflow-hidden">
+        <div className="bg-slate-50/50 border-b border-slate-100 p-5">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col md:flex-row gap-3 items-end">
               
@@ -201,7 +201,7 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
               </Button>
             </div>
           </div>
-        </CardHeader>
+        </div>
         
         <CardContent className="p-6 bg-slate-50/30">
           {loading ? (
@@ -222,23 +222,21 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sessionList.map((session) => (
-                  <Card key={session.id} className="hover:border-blue-300 transition-colors cursor-pointer flex flex-col h-full bg-white shadow-sm" onClick={() => setSelectedSession(session)}>
-                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-                      <div className="flex justify-between items-start gap-3">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-bold text-slate-900 leading-tight truncate" title={session.excul_name}>{session.excul_name}</h3>
-                          <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1" title={`${session.mentor_name} ${session.waktu_sesi ? `• ${session.waktu_sesi}` : ''}`}>
-                            <Users className="w-3 h-3 text-blue-500 shrink-0"/> 
-                            <span className="truncate">{session.mentor_name}</span>
-                            {session.waktu_sesi && <span className="text-slate-400 font-normal shrink-0">• {session.waktu_sesi}</span>}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="bg-white whitespace-nowrap font-semibold shadow-sm shrink-0">
-                          {new Date(session.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                        </Badge>
+                  <Card key={session.id} className="py-0 gap-0 overflow-hidden hover:border-blue-300 transition-colors cursor-pointer flex flex-col h-full bg-white shadow-sm" onClick={() => setSelectedSession(session)}>
+                    <div className="flex justify-between items-start gap-3 p-5 border-b border-slate-100 bg-slate-50/50">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-slate-900 leading-tight truncate" title={session.excul_name}>{session.excul_name}</h3>
+                        <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1">
+                          <Users className="w-3 h-3 text-blue-500 shrink-0"/> 
+                          <span className="truncate" title={session.mentor_name}>{session.mentor_name}</span>
+                          {session.waktu_sesi && <span className="text-slate-400 font-normal shrink-0">• {session.waktu_sesi}</span>}
+                        </p>
                       </div>
-                    </CardHeader>
-                    <CardContent className="pt-4 flex-1 flex flex-col justify-between">
+                      <Badge variant="outline" className="bg-white whitespace-nowrap font-semibold shadow-sm shrink-0">
+                        {new Date(session.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                      </Badge>
+                    </div>
+                    <CardContent className="p-5 flex-1 flex flex-col justify-between">
                       <div className="grid grid-cols-4 gap-2 mb-4 text-center">
                         <div className="bg-green-50 p-2 rounded-lg border border-green-100">
                           <div className="text-[10px] text-green-600 font-bold uppercase tracking-wider mb-0.5">Hadir</div>
