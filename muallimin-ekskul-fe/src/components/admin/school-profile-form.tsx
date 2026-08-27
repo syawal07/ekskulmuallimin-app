@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { updateCompanyProfile } from "@/actions/settingAction"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,6 +44,8 @@ function SaveButton({ loading }: { loading: boolean }) {
 export default function SchoolProfileForm({ initialData = {} }: { initialData?: CompanyProfile | null }) {
   const data = initialData || {}
   const [loading, setLoading] = useState(false)
+  const [hasNewDocument, setHasNewDocument] = useState(false)
+  const documentInputRef = useRef<HTMLInputElement>(null)
 
   const getImageUrl = (path?: string | null) => {
     if (!path) return '';
@@ -69,7 +71,7 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
     }
   }
 
-async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
     try {
@@ -80,9 +82,14 @@ async function handleSave(event: React.FormEvent<HTMLFormElement>) {
         toast.error(res.error)
       } else {
         toast.success("Perubahan berhasil disimpan!")
-        setTimeout(() => {
-            window.location.reload()
-        }, 1000)
+        
+        const fileGuidebook = formData.get('guidebook') as File | null;
+        if (fileGuidebook && fileGuidebook.size > 0) {
+            setHasNewDocument(true)
+            if (documentInputRef.current) {
+                documentInputRef.current.value = ""
+            }
+        }
       }
     } catch (err) {
       toast.error("Gagal terhubung ke server. Pastikan ukuran file tidak terlalu besar.")
@@ -234,12 +241,16 @@ async function handleSave(event: React.FormEvent<HTMLFormElement>) {
               <div className="space-y-2">
                 <Label>Buku Pedoman Ekstrakurikuler (PDF)</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center bg-slate-50 flex flex-col items-center justify-center">
-                  {data.guidebook_url && (
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
-                        <FileText className="w-6 h-6 text-blue-600" />
+                  {(data.guidebook_url || hasNewDocument) && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3 w-full max-w-sm">
+                        <FileText className="w-6 h-6 text-blue-600 shrink-0" />
                         <div className="text-left">
                             <p className="text-sm font-bold text-blue-900">Dokumen Saat Ini Tersedia</p>
-                            <a href={getImageUrl(data.guidebook_url)} target="_blank" className="text-xs text-blue-600 hover:underline">Lihat Dokumen</a>
+                            {hasNewDocument ? (
+                                <span className="text-xs text-emerald-600 font-bold">Dokumen baru berhasil disimpan!</span>
+                            ) : (
+                                <a href={getImageUrl(data.guidebook_url)} target="_blank" className="text-xs text-blue-600 hover:underline">Lihat Dokumen</a>
+                            )}
                         </div>
                     </div>
                   )}
@@ -249,6 +260,7 @@ async function handleSave(event: React.FormEvent<HTMLFormElement>) {
                     accept="application/pdf" 
                     className="text-sm text-slate-500 mx-auto"
                     onChange={handleFileChange}
+                    ref={documentInputRef}
                   />
                   <p className="text-xs text-slate-400 mt-2">Maksimal 5MB. Hanya menerima format .PDF</p>
                   <p className="text-xs text-amber-600 mt-1 font-medium">Kosongkan jika tidak ingin mengubah dokumen yang sudah ada.</p>
@@ -293,4 +305,4 @@ async function handleSave(event: React.FormEvent<HTMLFormElement>) {
       </TabsContent>
     </Tabs>
   )
-}
+} 
