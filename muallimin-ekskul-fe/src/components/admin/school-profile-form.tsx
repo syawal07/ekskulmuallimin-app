@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Save, School, Globe, ImageIcon, Loader2, Lock } from "lucide-react"
+import { Save, School, Globe, ImageIcon, Loader2, Lock, FileText } from "lucide-react"
 import { toast } from "sonner"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 
@@ -24,6 +24,7 @@ export interface CompanyProfile {
   email?: string;
   phone?: string;
   website?: string;
+  guidebook_url?: string;
   login_image_url?: string;
   login_quote?: string;
   login_quote_author?: string;
@@ -71,7 +72,6 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
-
     try {
       const formData = new FormData(event.currentTarget)
       const res = await updateCompanyProfile(formData)
@@ -82,7 +82,7 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
         toast.success("Perubahan berhasil disimpan!")
       }
     } catch (err) {
-      toast.error("Gagal terhubung ke server. Pastikan ukuran gambar tidak terlalu besar.")
+      toast.error("Gagal terhubung ke server. Pastikan ukuran file tidak terlalu besar.")
     } finally {
       setLoading(false)
     }
@@ -91,10 +91,11 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
   return (
     <Tabs defaultValue="branding" className="w-full space-y-6">
       <div className="flex items-center justify-between">
-         <TabsList className="grid w-full max-w-2xl grid-cols-4 h-auto p-1 bg-slate-100">
+         <TabsList className="grid w-full max-w-3xl grid-cols-5 h-auto p-1 bg-slate-100">
             <TabsTrigger value="branding" className="py-2">Identitas</TabsTrigger>
             <TabsTrigger value="landing" className="py-2">Landing Page</TabsTrigger>
             <TabsTrigger value="login" className="py-2">Halaman Login</TabsTrigger>
+            <TabsTrigger value="document" className="py-2">Dokumen</TabsTrigger>
             <TabsTrigger value="contact" className="py-2">Kontak</TabsTrigger>
          </TabsList>
       </div>
@@ -212,6 +213,43 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
               <div className="space-y-2">
                 <Label>Tokoh / Penulis</Label>
                 <Input name="login_quote_author" defaultValue={data.login_quote_author || ""} />
+              </div>
+              <SaveButton loading={loading} />
+            </CardContent>
+          </Card>
+        </form>
+      </TabsContent>
+
+      <TabsContent value="document">
+        <form onSubmit={handleSave}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-primary" /> Dokumen Publik</CardTitle>
+              <CardDescription>Upload dokumen panduan yang dapat diunduh oleh masyarakat di halaman depan.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label>Buku Pedoman Ekstrakurikuler (PDF)</Label>
+                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center bg-slate-50 flex flex-col items-center justify-center">
+                  {data.guidebook_url && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
+                        <FileText className="w-6 h-6 text-blue-600" />
+                        <div className="text-left">
+                            <p className="text-sm font-bold text-blue-900">Dokumen Saat Ini Tersedia</p>
+                            <a href={getImageUrl(data.guidebook_url)} target="_blank" className="text-xs text-blue-600 hover:underline">Lihat Dokumen</a>
+                        </div>
+                    </div>
+                  )}
+                  <input 
+                    type="file" 
+                    name="guidebook" 
+                    accept="application/pdf" 
+                    className="text-sm text-slate-500 mx-auto"
+                    onChange={handleFileChange}
+                  />
+                  <p className="text-xs text-slate-400 mt-2">Maksimal 5MB. Hanya menerima format .PDF</p>
+                  <p className="text-xs text-amber-600 mt-1 font-medium">Kosongkan jika tidak ingin mengubah dokumen yang sudah ada.</p>
+                </div>
               </div>
               <SaveButton loading={loading} />
             </CardContent>

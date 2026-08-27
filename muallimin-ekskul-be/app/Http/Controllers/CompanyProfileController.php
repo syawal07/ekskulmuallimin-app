@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\File;
 
 class CompanyProfileController extends Controller
 {
-    // Menampilkan profil (otomatis buat default jika kosong)
     public function show()
     {
         $profile = CompanyProfile::first();
@@ -29,12 +28,10 @@ class CompanyProfileController extends Controller
         ], 200);
     }
 
-    // Update profil dan upload gambar
     public function update(Request $request)
     {
         $profile = CompanyProfile::first();
 
-        // 1. Update data teks
         $fillableTexts = [
             'school_name', 'hero_title', 'hero_subtitle', 'hero_description', 
             'about_text', 'address', 'email', 'phone', 'website', 
@@ -47,10 +44,10 @@ class CompanyProfileController extends Controller
             }
         }
 
-        // 2. Handle Upload Gambar
         $this->handleFileUpload($request, $profile, 'logo', 'logo_url');
         $this->handleFileUpload($request, $profile, 'heroImage', 'hero_image_url');
         $this->handleFileUpload($request, $profile, 'loginImage', 'login_image_url');
+        $this->handleFileUpload($request, $profile, 'guidebook', 'guidebook_url');
 
         $profile->save();
 
@@ -61,28 +58,25 @@ class CompanyProfileController extends Controller
         ], 200);
     }
 
-    // Helper untuk fungsi upload agar rapi
     private function handleFileUpload(Request $request, $profile, $inputKey, $columnName)
     {
         if ($request->hasFile($inputKey)) {
             $file = $request->file($inputKey);
             $filename = $inputKey . '-' . time() . '-' . uniqid() . '.' . $file->getClientOriginalExtension();
+            
             $destinationPath = public_path('uploads/cms');
-
-            // Buat folder jika belum ada
+            
             if (!File::exists($destinationPath)) {
                 File::makeDirectory($destinationPath, 0755, true);
             }
-
-            // Hapus gambar lama jika ada (Biar server nggak kepenuhan)
+            
             if ($profile->{$columnName}) {
                 $oldImagePath = public_path($profile->{$columnName});
                 if (File::exists($oldImagePath) && $profile->{$columnName} !== '/logo.png') {
                     File::delete($oldImagePath);
                 }
             }
-
-            // Simpan gambar baru
+            
             $file->move($destinationPath, $filename);
             $profile->{$columnName} = '/uploads/cms/' . $filename;
         }

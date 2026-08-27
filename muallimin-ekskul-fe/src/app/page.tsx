@@ -1,7 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Trophy, Users, Globe, MapPin, CheckCircle2, Sparkles, Camera, BookOpen, ChevronRight } from "lucide-react"
+import { ArrowRight, Trophy, Users, Globe, MapPin, CheckCircle2, Sparkles, Camera, BookOpen, ChevronRight, Download } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -25,6 +25,7 @@ interface CompanyProfileData {
   email: string | null;
   phone: string | null;
   website: string | null;
+  guidebook_url: string | null;
 }
 
 interface LandingData {
@@ -48,7 +49,6 @@ async function getPublicNews(): Promise<NewsItem[]> {
     const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
     if (!apiUrl) return [];
     
-    // PERBAIKAN: Menggunakan revalidate 60 detik agar website terbuka secepat kilat
     const res = await fetch(`${apiUrl}/public/news`, { next: { revalidate: 60 } });
     if (!res.ok) return [];
     
@@ -66,7 +66,6 @@ async function getLandingData(): Promise<LandingData | null> {
       return null;
     }
 
-    // PERBAIKAN: Menggunakan revalidate 60 detik agar website terbuka secepat kilat
     const res = await fetch(`${apiUrl}/landing`, { next: { revalidate: 60 } });
     
     if (!res.ok) {
@@ -112,7 +111,7 @@ export default async function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#F8FAFC] font-sans selection:bg-amber-200 selection:text-blue-900 overflow-x-hidden">
       
-      {/* HEADER: Disamakan dengan web SPMB (Full width, transparan/biru) */}
+      {/* HEADER */}
       <header className="absolute top-0 z-50 w-full border-b border-white/10 bg-blue-700/90 backdrop-blur-md">
         <div className="container max-w-7xl mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 md:gap-4 cursor-pointer">
@@ -132,7 +131,6 @@ export default async function LandingPage() {
               </span>
             </div>
           </div>
-
           <nav className="flex items-center gap-6 md:gap-10">
             <div className="hidden lg:flex gap-8 text-sm font-semibold text-blue-50">
               <Link href="#about" className="hover:text-amber-400 transition-colors">Beranda</Link>
@@ -150,11 +148,10 @@ export default async function LandingPage() {
 
       <main className="flex-1">
         
-        {/* HERO SECTION: Biru Solid seperti web SPMB */}
+        {/* HERO SECTION */}
         <section className="relative w-full min-h-screen flex items-center pt-32 pb-32 md:pb-48 bg-blue-700 overflow-hidden">
-          {/* Aksen garis halus di background */}
           <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
-
+          
           <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center relative z-10">
             
             <div className="space-y-6 lg:space-y-8 animate-in fade-in slide-in-from-left-8 duration-1000">
@@ -172,12 +169,22 @@ export default async function LandingPage() {
                 {heroDesc}
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-4 pt-4">
                 <Link href="/login">
                   <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-base rounded-xl bg-amber-500 text-slate-900 hover:bg-amber-600 font-bold transition-all duration-300 hover:-translate-y-1">
                     Login Pelatih<ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
+                
+                {/* TOMBOL DOWNLOAD DOKUMEN MUNCUL JIKA FILE ADA */}
+                {profile?.guidebook_url && (
+                   <a href={getImageUrl(profile.guidebook_url)} target="_blank" rel="noopener noreferrer">
+                      <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-base rounded-xl bg-white text-blue-700 hover:bg-slate-100 font-bold transition-all duration-300 shadow-lg">
+                        <Download className="mr-2 w-4 h-4" /> Buku Pedoman
+                      </Button>
+                   </a>
+                )}
+
                 <Link href="#about">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-base rounded-xl text-white bg-transparent border border-white/30 hover:bg-white/10 font-bold transition-all duration-300">
                     Tentang Kami
@@ -186,13 +193,10 @@ export default async function LandingPage() {
               </div>
             </div>
 
-            {/* GAMBAR HERO: Lebih elegan dan clean dengan aksen siku kuning */}
             <div className="relative mx-auto lg:ml-auto w-full max-w-[500px] lg:max-w-[550px] animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
-              {/* Aksen Siku Kanan Atas */}
               <div className="absolute -top-6 -right-6 w-24 h-24 border-t-4 border-r-4 border-amber-400 rounded-tr-2xl hidden md:block" />
-              {/* Aksen Siku Kiri Bawah */}
               <div className="absolute -bottom-6 -left-6 w-24 h-24 border-b-4 border-l-4 border-amber-400 rounded-bl-2xl hidden md:block" />
-
+              
               <div className="relative aspect-[4/5] rounded-3xl bg-blue-800 shadow-2xl overflow-hidden group">
                 {profile?.hero_image_url ? (
                   <Image 
@@ -218,7 +222,6 @@ export default async function LandingPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-900/60 via-transparent to-transparent" />
               </div>
 
-              {/* Floating Badge ala SPMB */}
               <div className="absolute -bottom-8 right-4 md:-bottom-10 md:right-10 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-4">
                 <div className="bg-amber-400 p-3 rounded-xl text-slate-900">
                   <Users className="w-6 h-6" />
@@ -233,6 +236,7 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        {/* STATS SECTION */}
         <section id="stats" className="relative w-full -mt-16 md:-mt-24 z-20 px-4">
           <div className="container max-w-6xl mx-auto">
             <div className="bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100 p-8 md:p-10 relative overflow-hidden">
@@ -279,6 +283,7 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        {/* ABOUT SECTION */}
         <section id="about" className="w-full py-24 md:py-32 bg-[#F8FAFC] relative">
           <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16">
             <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
@@ -307,6 +312,7 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        {/* NEWS SECTION */}
         <section id="news" className="w-full py-24 md:py-32 bg-white border-y border-slate-100">
           <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
@@ -341,126 +347,138 @@ export default async function LandingPage() {
                           <Globe className="w-12 h-12 text-slate-300" />
                         </div>
                       )}
-                      <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm">
-                        {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-blue-700 shadow-sm">
+                        {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                       </div>
                     </div>
-                    <div className="p-6 flex flex-col flex-1">
-                      <h3 className="text-xl font-bold text-slate-900 mb-4 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug tracking-tight">
+                    <div className="p-6 md:p-8 flex-1 flex flex-col">
+                      <h3 className="text-xl font-bold text-slate-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">
                         {item.title}
                       </h3>
-                      <div className="mt-auto flex items-center text-amber-500 font-bold text-sm transition-colors duration-300">
-                        Selengkapnya <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
+                      <p className="text-slate-500 text-sm line-clamp-3 leading-relaxed mb-6 font-medium">
+                        {item.content}
+                      </p>
+                      <div className="mt-auto flex items-center text-blue-600 font-bold text-sm">
+                        Baca selengkapnya <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 border border-dashed border-slate-200 rounded-3xl bg-slate-50">
-                <p className="text-slate-500 font-medium">Belum ada berita yang dipublikasikan.</p>
+              <div className="text-center py-20 bg-slate-50 rounded-3xl border border-slate-100">
+                <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 font-medium">Belum ada berita terbaru saat ini.</p>
               </div>
             )}
+            
+            <Link href="/public/news" className="md:hidden mt-8 block">
+              <Button variant="outline" className="w-full font-bold border-slate-200">
+                Lihat Semua Berita
+              </Button>
+            </Link>
           </div>
         </section>
 
-        <section id="gallery" className="w-full py-24 md:py-32 bg-slate-900">
+        {/* GALLERY SECTION */}
+        <section id="gallery" className="w-full py-24 md:py-32 bg-[#F8FAFC] border-b border-slate-100">
           <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16">
-            <div className="flex flex-col items-center text-center mb-16 space-y-3">
-              <span className="text-amber-400 font-bold tracking-[0.2em] text-sm uppercase">Dokumentasi</span>
-              <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Galeri Kegiatan</h2>
+            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+              <div className="space-y-3">
+                <span className="text-amber-500 font-bold tracking-[0.2em] text-sm uppercase flex items-center gap-2">
+                  <Camera className="w-4 h-4"/> Lensa Kegiatan
+                </span>
+                <h2 className="text-3xl md:text-5xl font-bold text-slate-900 tracking-tight">Galeri Madrasah</h2>
+              </div>
             </div>
 
             {galleries.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {galleries.map((gal) => (
-                  <div key={gal.id} className="group relative aspect-square md:aspect-[4/5] overflow-hidden rounded-3xl bg-slate-800">
-                    <Image 
-                      src={getImageUrl(gal.image_url)} 
-                      alt={gal.title} 
-                      fill 
-                      unoptimized
-                      className="object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100" 
+              <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
+                {galleries.map((item) => (
+                  <div key={item.id} className="break-inside-avoid relative group rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-100">
+                    <img 
+                      src={getImageUrl(item.image_url)} 
+                      alt={item.title} 
+                      className="w-full h-auto object-cover" 
+                      loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-90 transition-opacity duration-500 flex items-end p-6">
-                      <div className="translate-y-2 group-hover:translate-y-0 transition-transform duration-500 w-full">
-                        <h4 className="text-white font-bold text-lg leading-snug tracking-tight border-l-4 border-amber-400 pl-3">{gal.title}</h4>
-                      </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
+                      <h4 className="text-white font-bold text-lg leading-snug translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{item.title}</h4>
+                      <p className="text-blue-200 text-xs font-medium mt-2 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                        {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-20 border border-dashed border-slate-700 rounded-3xl bg-slate-800/30">
-                <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mb-4">
-                    <Camera className="w-8 h-8 text-slate-500" />
-                </div>
-                <p className="text-slate-400 font-medium">Belum ada dokumentasi kegiatan.</p>
+              <div className="text-center py-20 bg-white rounded-3xl border border-slate-100">
+                <Camera className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 font-medium">Koleksi galeri sedang disiapkan.</p>
               </div>
             )}
           </div>
         </section>
+
       </main>
 
-      <footer className="w-full bg-blue-900 py-12 md:py-16">
+      {/* FOOTER */}
+      <footer className="bg-white border-t border-slate-200 pt-20 pb-10">
         <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16">
-          <div className="grid md:grid-cols-3 gap-12 mb-12 border-b border-blue-800 pb-12">
-            
-            <div className="space-y-6">
-              <div className="flex items-center gap-4 text-white">
-                <div className="bg-white rounded-full p-1.5 flex items-center justify-center">
-                  <Image 
-                    src={logo} 
-                    alt="Logo" 
-                    width={36}
-                    height={36}
-                    unoptimized 
-                    className="object-contain" 
-                  />
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 mb-16">
+            <div className="md:col-span-5 lg:col-span-4 flex flex-col items-center md:items-start text-center md:text-left">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <Image src={logo} alt="Logo" width={32} height={32} unoptimized className="object-contain" />
                 </div>
-                <span className="font-bold text-xl tracking-tight">Muallimin System</span>
+                <span className="text-lg font-bold text-slate-900 leading-tight">
+                  {profile?.school_name || "Madrasah Mu'allimin"}
+                </span>
               </div>
-              <p className="leading-relaxed max-w-sm text-sm font-medium text-blue-100">
-                Mencetak Kader Ulama, Intelek, dan Pendidik Bangsa yang Berkemajuan.
+              <p className="text-slate-500 text-sm leading-relaxed mb-8 max-w-sm">
+                Sistem informasi dan manajemen terpadu yang memfasilitasi kebutuhan kegiatan dan prestasi siswa secara digital.
               </p>
             </div>
             
-            <div>
-              <h4 className="text-white font-bold mb-6 text-base tracking-tight uppercase">Hubungi Kami</h4>
-              <ul className="space-y-4 text-sm font-medium text-blue-100">
-                <li className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-amber-400 shrink-0" />
-                  <span className="leading-relaxed">{profile?.address || "Alamat sekolah belum diatur."}</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
-                  <span>{profile?.email || "-"}</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
-                  <span>{profile?.phone || "-"}</span>
-                </li>
+            <div className="md:col-span-3 lg:col-span-4 lg:ml-12 text-center md:text-left">
+              <h4 className="font-bold text-slate-900 mb-6 uppercase tracking-wider text-sm">Pintasan</h4>
+              <ul className="space-y-4 text-sm text-slate-500 font-medium">
+                <li><Link href="#about" className="hover:text-blue-600 transition-colors flex items-center justify-center md:justify-start"><ChevronRight className="w-3 h-3 mr-2" /> Profil</Link></li>
+                <li><Link href="#gallery" className="hover:text-blue-600 transition-colors flex items-center justify-center md:justify-start"><ChevronRight className="w-3 h-3 mr-2" /> Galeri</Link></li>
+                <li><Link href="/login" className="hover:text-blue-600 transition-colors flex items-center justify-center md:justify-start"><ChevronRight className="w-3 h-3 mr-2" /> Login Pelatih</Link></li>
               </ul>
             </div>
-            
-            <div>
-              <h4 className="text-white font-bold mb-6 text-base tracking-tight uppercase">Akses Cepat</h4>
-              <ul className="space-y-3 text-sm font-medium text-blue-100">
-                {profile?.website && (
-                  <li>
-                    <Link href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" className="hover:text-amber-400 transition-colors">
-                      Website Resmi
-                    </Link>
+
+            <div className="md:col-span-4 lg:col-span-4 text-center md:text-left">
+              <h4 className="font-bold text-slate-900 mb-6 uppercase tracking-wider text-sm">Hubungi Kami</h4>
+              <ul className="space-y-4 text-sm text-slate-500 font-medium">
+                <li className="flex items-start justify-center md:justify-start gap-3">
+                  <MapPin className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{profile?.address || "Jl. Letjend S. Parman No.68, Wirobrajan, Yogyakarta"}</span>
+                </li>
+                {profile?.email && (
+                  <li className="flex items-center justify-center md:justify-start gap-3">
+                    <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">@</div>
+                    <span>{profile.email}</span>
                   </li>
                 )}
-                <li><Link href="/login" className="hover:text-amber-400 transition-colors">Portal Admin & Mentor</Link></li>
-                <li><Link href="#" className="hover:text-amber-400 transition-colors">Jadwal Ekskul</Link></li>
+                {profile?.phone && (
+                  <li className="flex items-center justify-center md:justify-start gap-3">
+                    <Globe className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>{profile.phone}</span>
+                  </li>
+                )}
               </ul>
             </div>
           </div>
           
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-semibold text-blue-200">
-            <p>&copy; {new Date().getFullYear()} Tim IT Madrasah Mu&apos;allimin Muhammadiyah.</p>
+          <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-slate-400 font-medium text-center md:text-left">
+              &copy; {new Date().getFullYear()} {profile?.school_name || "Madrasah Mu'allimin Muhammadiyah"}. Hak Cipta Dilindungi.
+            </p>
+            <div className="flex items-center gap-1 text-xs text-slate-400 font-medium">
+              Made with <CheckCircle2 className="w-3 h-3 text-emerald-500 mx-1" /> in Yogyakarta
+            </div>
           </div>
         </div>
       </footer>
