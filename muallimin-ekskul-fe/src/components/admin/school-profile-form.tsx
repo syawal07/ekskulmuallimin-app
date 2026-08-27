@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { updateCompanyProfile } from "@/actions/settingAction"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,8 +44,6 @@ function SaveButton({ loading }: { loading: boolean }) {
 export default function SchoolProfileForm({ initialData = {} }: { initialData?: CompanyProfile | null }) {
   const data = initialData || {}
   const [loading, setLoading] = useState(false)
-  const [hasNewDocument, setHasNewDocument] = useState(false)
-  const documentInputRef = useRef<HTMLInputElement>(null)
 
   const getImageUrl = (path?: string | null) => {
     if (!path) return '';
@@ -82,14 +80,6 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
         toast.error(res.error)
       } else {
         toast.success("Perubahan berhasil disimpan!")
-        
-        const fileGuidebook = formData.get('guidebook') as File | null;
-        if (fileGuidebook && fileGuidebook.size > 0) {
-            setHasNewDocument(true)
-            if (documentInputRef.current) {
-                documentInputRef.current.value = ""
-            }
-        }
       }
     } catch (err) {
       toast.error("Gagal terhubung ke server. Pastikan ukuran file tidak terlalu besar.")
@@ -122,6 +112,7 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                 <Label>Nama Sekolah</Label>
                 <Input name="school_name" defaultValue={data.school_name || ""} required />
               </div>
+
               <div className="space-y-2">
                 <Label>Logo Sekolah</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center bg-slate-50 hover:bg-slate-100 transition">
@@ -138,6 +129,7 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                   <p className="text-[10px] text-slate-400 mt-1">Maksimal 5MB (PNG/JPG)</p>
                 </div>
               </div>
+
               <SaveButton loading={loading} />
             </CardContent>
           </Card>
@@ -162,10 +154,12 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                   <Input name="hero_subtitle" defaultValue={data.hero_subtitle || ""} />
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label>Deskripsi Singkat</Label>
                 <textarea name="hero_description" defaultValue={data.hero_description || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
+
               <div className="space-y-2">
                 <Label>Foto Banner (Background)</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center bg-slate-50">
@@ -182,10 +176,12 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                   <p className="text-[10px] text-slate-400 mt-1">Maksimal 5MB</p>
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label>Tentang Sekolah</Label>
                 <textarea name="about_text" defaultValue={data.about_text || ""} className="flex min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
+
               <SaveButton loading={loading} />
             </CardContent>
           </Card>
@@ -216,14 +212,17 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                   <p className="text-[10px] text-slate-400 mt-1">Maksimal 5MB (Disarankan gambar Portrait)</p>
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label>Kutipan Motivasi</Label>
                 <textarea name="login_quote" defaultValue={data.login_quote || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
+
               <div className="space-y-2">
                 <Label>Tokoh / Penulis</Label>
                 <Input name="login_quote_author" defaultValue={data.login_quote_author || ""} />
               </div>
+
               <SaveButton loading={loading} />
             </CardContent>
           </Card>
@@ -241,16 +240,12 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
               <div className="space-y-2">
                 <Label>Buku Pedoman Ekstrakurikuler (PDF)</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center bg-slate-50 flex flex-col items-center justify-center">
-                  {(data.guidebook_url || hasNewDocument) && (
+                  {data.guidebook_url && (
                     <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3 w-full max-w-sm">
                         <FileText className="w-6 h-6 text-blue-600 shrink-0" />
                         <div className="text-left">
                             <p className="text-sm font-bold text-blue-900">Dokumen Saat Ini Tersedia</p>
-                            {hasNewDocument ? (
-                                <span className="text-xs text-emerald-600 font-bold">Dokumen baru berhasil disimpan!</span>
-                            ) : (
-                                <a href={getImageUrl(data.guidebook_url)} target="_blank" className="text-xs text-blue-600 hover:underline">Lihat Dokumen</a>
-                            )}
+                            <a href={getImageUrl(data.guidebook_url)} target="_blank" className="text-xs text-blue-600 hover:underline">Lihat Dokumen</a>
                         </div>
                     </div>
                   )}
@@ -260,12 +255,12 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                     accept="application/pdf" 
                     className="text-sm text-slate-500 mx-auto"
                     onChange={handleFileChange}
-                    ref={documentInputRef}
                   />
                   <p className="text-xs text-slate-400 mt-2">Maksimal 5MB. Hanya menerima format .PDF</p>
                   <p className="text-xs text-amber-600 mt-1 font-medium">Kosongkan jika tidak ingin mengubah dokumen yang sudah ada.</p>
                 </div>
               </div>
+
               <SaveButton loading={loading} />
             </CardContent>
           </Card>
@@ -290,14 +285,17 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                   <Input name="email" defaultValue={data.email || ""} type="email" />
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label>Website URL</Label>
                 <Input name="website" defaultValue={data.website || ""} />
               </div>
+
               <div className="space-y-2">
                 <Label>Alamat Lengkap</Label>
                 <textarea name="address" defaultValue={data.address || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
+
               <SaveButton loading={loading} />
             </CardContent>
           </Card>
@@ -305,4 +303,4 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
       </TabsContent>
     </Tabs>
   )
-} 
+}
