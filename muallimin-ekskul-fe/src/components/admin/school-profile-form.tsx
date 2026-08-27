@@ -69,7 +69,7 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
     }
   }
 
-  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
     try {
@@ -80,6 +80,9 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
         toast.error(res.error)
       } else {
         toast.success("Perubahan berhasil disimpan!")
+        setTimeout(() => {
+            window.location.reload()
+        }, 1000)
       }
     } catch (err) {
       toast.error("Gagal terhubung ke server. Pastikan ukuran file tidak terlalu besar.")
