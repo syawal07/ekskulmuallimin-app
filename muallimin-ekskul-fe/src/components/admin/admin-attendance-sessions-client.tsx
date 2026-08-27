@@ -224,12 +224,13 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
                 {sessionList.map((session) => (
                   <Card key={session.id} className="hover:border-blue-300 transition-colors cursor-pointer flex flex-col h-full bg-white shadow-sm" onClick={() => setSelectedSession(session)}>
                     <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="min-w-0">
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="min-w-0 flex-1">
                           <h3 className="font-bold text-slate-900 leading-tight truncate" title={session.excul_name}>{session.excul_name}</h3>
-                          <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1 truncate">
-                            <Users className="w-3 h-3 text-blue-500 shrink-0"/> {session.mentor_name}
-                            {session.waktu_sesi && <span className="text-slate-400 font-normal ml-1">• {session.waktu_sesi}</span>}
+                          <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1" title={`${session.mentor_name} ${session.waktu_sesi ? `• ${session.waktu_sesi}` : ''}`}>
+                            <Users className="w-3 h-3 text-blue-500 shrink-0"/> 
+                            <span className="truncate">{session.mentor_name}</span>
+                            {session.waktu_sesi && <span className="text-slate-400 font-normal shrink-0">• {session.waktu_sesi}</span>}
                           </p>
                         </div>
                         <Badge variant="outline" className="bg-white whitespace-nowrap font-semibold shadow-sm shrink-0">
