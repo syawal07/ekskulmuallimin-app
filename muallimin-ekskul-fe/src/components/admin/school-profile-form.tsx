@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from "react"
+import { useRouter } from "next/navigation" // 1. Import useRouter
 import { updateCompanyProfile } from "@/actions/settingAction"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,6 +45,7 @@ function SaveButton({ loading }: { loading: boolean }) {
 export default function SchoolProfileForm({ initialData = {} }: { initialData?: CompanyProfile | null }) {
   const data = initialData || {}
   const [loading, setLoading] = useState(false)
+  const router = useRouter() // 2. Inisialisasi router
 
   const getImageUrl = (path?: string | null) => {
     if (!path) return '';
@@ -80,6 +82,7 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
         toast.error(res.error)
       } else {
         toast.success("Perubahan berhasil disimpan!")
+        router.refresh() // 3. Panggil refresh agar data baru (termasuk PDF) langsung masuk ke UI
       }
     } catch (err) {
       toast.error("Gagal terhubung ke server. Pastikan ukuran file tidak terlalu besar.")
@@ -240,6 +243,8 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
               <div className="space-y-2">
                 <Label>Buku Pedoman Ekstrakurikuler (PDF)</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center bg-slate-50 flex flex-col items-center justify-center">
+                  
+                  {/* Boks biru akan muncul jika data.guidebook_url sudah terisi setelah router.refresh() */}
                   {data.guidebook_url && (
                     <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3 w-full max-w-sm">
                         <FileText className="w-6 h-6 text-blue-600 shrink-0" />
@@ -249,6 +254,7 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                         </div>
                     </div>
                   )}
+
                   <input 
                     type="file" 
                     name="guidebook" 
