@@ -1,7 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Trophy, Users, Globe, MapPin, CheckCircle2, Sparkles, Camera, BookOpen, ChevronRight, Download } from "lucide-react"
+import { ArrowRight, Trophy, Users, Globe, MapPin, CheckCircle2, Sparkles, Camera, BookOpen, ChevronRight, FileText } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -25,7 +25,7 @@ interface CompanyProfileData {
   email: string | null;
   phone: string | null;
   website: string | null;
-  guidebook_url: string | null;
+  guide_pdf_url: string | null;
 }
 
 interface LandingData {
@@ -65,7 +65,7 @@ async function getLandingData(): Promise<LandingData | null> {
     if (!apiUrl) {
       return null;
     }
-
+    
     const res = await fetch(`${apiUrl}/landing`, { next: { revalidate: 60 } });
     
     if (!res.ok) {
@@ -106,12 +106,12 @@ export default async function LandingPage() {
   const heroTitle = profile?.hero_title || "SPMB Madrasah"
   const heroSubtitle = profile?.hero_subtitle || "Mu'allimin Muhammadiyah"
   const heroDesc = profile?.hero_description || "Platform terpadu untuk pendaftaran siswa baru dan manajemen kegiatan ekstrakurikuler."
+  
   const logo = profile?.logo_url ? getImageUrl(profile.logo_url) : "/logo.png"
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F8FAFC] font-sans selection:bg-amber-200 selection:text-blue-900 overflow-x-hidden">
       
-      {/* HEADER */}
       <header className="absolute top-0 z-50 w-full border-b border-white/10 bg-blue-700/90 backdrop-blur-md">
         <div className="container max-w-7xl mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 md:gap-4 cursor-pointer">
@@ -148,7 +148,6 @@ export default async function LandingPage() {
 
       <main className="flex-1">
         
-        {/* HERO SECTION */}
         <section className="relative w-full min-h-screen flex items-center pt-32 pb-32 md:pb-48 bg-blue-700 overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
           
@@ -169,27 +168,24 @@ export default async function LandingPage() {
                 {heroDesc}
               </p>
 
-              <div className="flex flex-col sm:flex-row flex-wrap gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Link href="/login">
                   <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-base rounded-xl bg-amber-500 text-slate-900 hover:bg-amber-600 font-bold transition-all duration-300 hover:-translate-y-1">
                     Login Pelatih<ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
-                
-                {/* TOMBOL DOWNLOAD DOKUMEN MUNCUL JIKA FILE ADA */}
-                {profile?.guidebook_url && (
-                   <a href={getImageUrl(profile.guidebook_url)} target="_blank" rel="noopener noreferrer">
-                      <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-base rounded-xl bg-white text-blue-700 hover:bg-slate-100 font-bold transition-all duration-300 shadow-lg">
-                        <Download className="mr-2 w-4 h-4" /> Buku Pedoman
-                      </Button>
-                   </a>
-                )}
-
                 <Link href="#about">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-base rounded-xl text-white bg-transparent border border-white/30 hover:bg-white/10 font-bold transition-all duration-300">
                     Tentang Kami
                   </Button>
                 </Link>
+                {profile?.guide_pdf_url && (
+                  <a href={getImageUrl(profile.guide_pdf_url)} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                    <Button size="lg" variant="outline" className="w-full h-14 px-8 text-base rounded-xl text-white bg-white/10 border border-white/30 hover:bg-white/20 font-bold transition-all duration-300">
+                      <FileText className="mr-2 w-4 h-4" /> Panduan Sistem
+                    </Button>
+                  </a>
+                )}
               </div>
             </div>
 
@@ -205,7 +201,7 @@ export default async function LandingPage() {
                     fill
                     unoptimized 
                     className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-1000" 
-                    priority 
+                    priority
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-blue-800">
@@ -232,11 +228,9 @@ export default async function LandingPage() {
                 </div>
               </div>
             </div>
-
           </div>
         </section>
 
-        {/* STATS SECTION */}
         <section id="stats" className="relative w-full -mt-16 md:-mt-24 z-20 px-4">
           <div className="container max-w-6xl mx-auto">
             <div className="bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100 p-8 md:p-10 relative overflow-hidden">
@@ -283,7 +277,6 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* ABOUT SECTION */}
         <section id="about" className="w-full py-24 md:py-32 bg-[#F8FAFC] relative">
           <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16">
             <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
@@ -298,187 +291,182 @@ export default async function LandingPage() {
               {[
                 { title: "Kampus Induk", desc: "Pusat pengembangan akademik dan keagamaan di kawasan Wirobrajan.", icon: BookOpen },
                 { title: "Kampus Terpadu", desc: "Fasilitas modern di Sedayu dengan lingkungan asri pendukung sains & teknologi.", icon: Globe },
-                { title: "Kader Juara", desc: "Pembinaan intensif terstruktur untuk mencetak pemimpin di berbagai kompetisi.", icon: Trophy }
+                { title: "Kader Juara", desc: "Sistem monitoring talenta terstruktur untuk melahirkan generasi emas Muhammadiyah.", icon: Trophy }
               ].map((item, i) => (
-                <div key={i} className="group bg-white p-10 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-xl hover:-translate-y-2 transition-all duration-500 text-center">
-                  <div className="w-16 h-16 mx-auto bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-500">
-                    <item.icon className="w-8 h-8" />
+                <div key={i} className="group bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                  <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <item.icon className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-3 tracking-tight">{item.title}</h3>
-                  <p className="text-slate-500 leading-relaxed font-medium text-sm">{item.desc}</p>
+                  <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
+                  <p className="text-slate-500 leading-relaxed font-medium">{item.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* NEWS SECTION */}
-        <section id="news" className="w-full py-24 md:py-32 bg-white border-y border-slate-100">
-          <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-              <div className="space-y-3">
-                <span className="text-amber-500 font-bold tracking-[0.2em] text-sm uppercase flex items-center gap-2">
-                  <Sparkles className="w-4 h-4"/> Informasi Terkini
-                </span>
-                <h2 className="text-3xl md:text-5xl font-bold text-slate-900 tracking-tight">Berita & Update</h2>
+        {news.length > 0 && (
+          <section id="news" className="w-full py-24 bg-white relative">
+            <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16">
+              <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-16">
+                <div className="max-w-2xl space-y-4">
+                  <span className="text-blue-600 font-bold tracking-[0.2em] text-sm uppercase">Kabar Terbaru</span>
+                  <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight">Berita & Informasi</h2>
+                </div>
               </div>
-              <Link href="/public/news">
-                <Button variant="ghost" className="hidden md:flex font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg px-6">
-                  Lihat Semua Berita <ChevronRight className="ml-1 w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-            
-            {news.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              
+              <div className="grid md:grid-cols-3 gap-8">
                 {news.map((item) => (
-                  <Link href={`/berita/${item.slug}`} key={item.id} className="group flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
-                    <div className="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden">
+                  <Link href={`/berita/${item.slug}`} key={item.id} className="group flex flex-col bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                    <div className="aspect-[16/10] relative bg-slate-100 overflow-hidden">
                       {item.image ? (
                         <Image 
                           src={getImageUrl(item.image)} 
                           alt={item.title} 
-                          fill 
-                          unoptimized
-                          className="object-cover transition-transform duration-700 group-hover:scale-105" 
+                          fill
+                          unoptimized 
+                          className="object-cover group-hover:scale-105 transition-transform duration-700"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-slate-100">
-                          <Globe className="w-12 h-12 text-slate-300" />
+                        <div className="w-full h-full flex items-center justify-center">
+                          <BookOpen className="w-10 h-10 text-slate-300" />
                         </div>
                       )}
-                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-blue-700 shadow-sm">
-                        {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                      </div>
                     </div>
-                    <div className="p-6 md:p-8 flex-1 flex flex-col">
-                      <h3 className="text-xl font-bold text-slate-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">
+                    <div className="p-8 flex flex-col flex-1">
+                      <p className="text-sm font-bold text-blue-600 mb-3">
+                        {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </p>
+                      <h3 className="text-xl font-bold text-slate-900 mb-4 line-clamp-2 leading-snug group-hover:text-blue-700 transition-colors">
                         {item.title}
                       </h3>
-                      <p className="text-slate-500 text-sm line-clamp-3 leading-relaxed mb-6 font-medium">
-                        {item.content}
-                      </p>
-                      <div className="mt-auto flex items-center text-blue-600 font-bold text-sm">
-                        Baca selengkapnya <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      <div className="mt-auto flex items-center text-sm font-bold text-slate-500 group-hover:text-amber-500 transition-colors">
+                        Baca Selengkapnya <ChevronRight className="w-4 h-4 ml-1" />
                       </div>
                     </div>
                   </Link>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-20 bg-slate-50 rounded-3xl border border-slate-100">
-                <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500 font-medium">Belum ada berita terbaru saat ini.</p>
-              </div>
-            )}
-            
-            <Link href="/public/news" className="md:hidden mt-8 block">
-              <Button variant="outline" className="w-full font-bold border-slate-200">
-                Lihat Semua Berita
-              </Button>
-            </Link>
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
 
-        {/* GALLERY SECTION */}
-        <section id="gallery" className="w-full py-24 md:py-32 bg-[#F8FAFC] border-b border-slate-100">
-          <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-              <div className="space-y-3">
-                <span className="text-amber-500 font-bold tracking-[0.2em] text-sm uppercase flex items-center gap-2">
-                  <Camera className="w-4 h-4"/> Lensa Kegiatan
-                </span>
-                <h2 className="text-3xl md:text-5xl font-bold text-slate-900 tracking-tight">Galeri Madrasah</h2>
-              </div>
+        <section id="gallery" className="w-full py-24 bg-[#072657] text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-5 bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
+          
+          <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16 relative z-10">
+            <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+              <span className="text-amber-400 font-bold tracking-[0.2em] text-sm uppercase">Dokumentasi</span>
+              <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight tracking-tight">Galeri Kegiatan</h2>
+              <p className="text-blue-200 text-lg">Potret semangat dan prestasi kader Madrasah Mu&apos;allimin.</p>
             </div>
 
-            {galleries.length > 0 ? (
-              <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-                {galleries.map((item) => (
-                  <div key={item.id} className="break-inside-avoid relative group rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-100">
-                    <img 
-                      src={getImageUrl(item.image_url)} 
-                      alt={item.title} 
-                      className="w-full h-auto object-cover" 
-                      loading="lazy"
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+              {galleries.length > 0 ? (
+                galleries.map((img) => (
+                  <div key={img.id} className="group relative aspect-square md:aspect-[4/3] rounded-2xl overflow-hidden bg-blue-800">
+                    <Image 
+                      src={getImageUrl(img.image_url)} 
+                      alt={img.title} 
+                      fill 
+                      unoptimized 
+                      className="object-cover group-hover:scale-110 transition-transform duration-700" 
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
-                      <h4 className="text-white font-bold text-lg leading-snug translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{item.title}</h4>
-                      <p className="text-blue-200 text-xs font-medium mt-2 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                        {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#072657]/90 via-[#072657]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                      <h3 className="text-white font-bold text-lg md:text-xl transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{img.title}</h3>
+                      <p className="text-blue-200 text-sm mt-1 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                        {new Date(img.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </p>
                     </div>
                   </div>
-                ))}
+                ))
+              ) : (
+                <div className="col-span-full py-20 text-center flex flex-col items-center">
+                  <Camera className="w-16 h-16 text-blue-800 mb-4" />
+                  <p className="text-blue-400 font-medium">Belum ada foto galeri.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="w-full py-24 bg-white relative">
+          <div className="container max-w-4xl mx-auto px-6 text-center">
+            <div className="bg-amber-400 rounded-[3rem] p-12 md:p-20 relative overflow-hidden shadow-2xl">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-600/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+              
+              <div className="relative z-10 space-y-8">
+                <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">Siap Memulai Evaluasi?</h2>
+                <p className="text-lg text-slate-800 font-medium max-w-xl mx-auto">
+                  Akses portal pengajar untuk melakukan presensi, input nilai, dan memantau perkembangan santri secara menyeluruh.
+                </p>
+                <Link href="/login" className="inline-block">
+                  <Button size="lg" className="h-16 px-10 text-lg rounded-2xl bg-slate-900 text-white hover:bg-slate-800 font-bold transition-all duration-300 hover:scale-105 shadow-xl">
+                    Masuk ke Sistem Pengajar <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </Link>
               </div>
-            ) : (
-              <div className="text-center py-20 bg-white rounded-3xl border border-slate-100">
-                <Camera className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500 font-medium">Koleksi galeri sedang disiapkan.</p>
-              </div>
-            )}
+            </div>
           </div>
         </section>
 
       </main>
 
-      {/* FOOTER */}
-      <footer className="bg-white border-t border-slate-200 pt-20 pb-10">
-        <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 mb-16">
-            <div className="md:col-span-5 lg:col-span-4 flex flex-col items-center md:items-start text-center md:text-left">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                  <Image src={logo} alt="Logo" width={32} height={32} unoptimized className="object-contain" />
-                </div>
-                <span className="text-lg font-bold text-slate-900 leading-tight">
-                  {profile?.school_name || "Madrasah Mu'allimin"}
-                </span>
+      <footer className="bg-slate-900 text-slate-300 py-16 border-t border-white/5">
+        <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16 grid md:grid-cols-3 gap-12">
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white rounded-full p-1.5 flex items-center justify-center">
+                <Image 
+                  src={logo} 
+                  alt="Logo" 
+                  width={32}
+                  height={32}
+                  unoptimized 
+                  className="object-contain" 
+                />
               </div>
-              <p className="text-slate-500 text-sm leading-relaxed mb-8 max-w-sm">
-                Sistem informasi dan manajemen terpadu yang memfasilitasi kebutuhan kegiatan dan prestasi siswa secara digital.
-              </p>
+              <span className="text-lg font-bold text-white tracking-tight leading-tight">
+                {profile?.school_name || "Madrasah Mu'allimin"}
+              </span>
             </div>
-            
-            <div className="md:col-span-3 lg:col-span-4 lg:ml-12 text-center md:text-left">
-              <h4 className="font-bold text-slate-900 mb-6 uppercase tracking-wider text-sm">Pintasan</h4>
-              <ul className="space-y-4 text-sm text-slate-500 font-medium">
-                <li><Link href="#about" className="hover:text-blue-600 transition-colors flex items-center justify-center md:justify-start"><ChevronRight className="w-3 h-3 mr-2" /> Profil</Link></li>
-                <li><Link href="#gallery" className="hover:text-blue-600 transition-colors flex items-center justify-center md:justify-start"><ChevronRight className="w-3 h-3 mr-2" /> Galeri</Link></li>
-                <li><Link href="/login" className="hover:text-blue-600 transition-colors flex items-center justify-center md:justify-start"><ChevronRight className="w-3 h-3 mr-2" /> Login Pelatih</Link></li>
-              </ul>
-            </div>
-
-            <div className="md:col-span-4 lg:col-span-4 text-center md:text-left">
-              <h4 className="font-bold text-slate-900 mb-6 uppercase tracking-wider text-sm">Hubungi Kami</h4>
-              <ul className="space-y-4 text-sm text-slate-500 font-medium">
-                <li className="flex items-start justify-center md:justify-start gap-3">
-                  <MapPin className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                  <span className="leading-relaxed">{profile?.address || "Jl. Letjend S. Parman No.68, Wirobrajan, Yogyakarta"}</span>
-                </li>
-                {profile?.email && (
-                  <li className="flex items-center justify-center md:justify-start gap-3">
-                    <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">@</div>
-                    <span>{profile.email}</span>
-                  </li>
-                )}
-                {profile?.phone && (
-                  <li className="flex items-center justify-center md:justify-start gap-3">
-                    <Globe className="w-4 h-4 text-blue-600 shrink-0" />
-                    <span>{profile.phone}</span>
-                  </li>
-                )}
-              </ul>
-            </div>
+            <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
+              Sistem Informasi Manajemen Ekstrakurikuler. Platform digital terpadu untuk pendataan, absensi, dan penilaian kegiatan santri.
+            </p>
           </div>
           
-          <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-slate-400 font-medium text-center md:text-left">
-              &copy; {new Date().getFullYear()} {profile?.school_name || "Madrasah Mu'allimin Muhammadiyah"}. Hak Cipta Dilindungi.
+          <div>
+            <h4 className="text-white font-bold mb-6 tracking-wide">Hubungi Kami</h4>
+            <ul className="space-y-4 text-sm text-slate-400">
+              <li className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-amber-500 shrink-0" />
+                <span>{profile?.address || "Jl. Letjend S. Parman 68 Wirobrajan Yogyakarta"}</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Globe className="w-5 h-5 text-amber-500 shrink-0" />
+                <span>{profile?.website || "www.muallimin.sch.id"}</span>
+              </li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="text-white font-bold mb-6 tracking-wide">Informasi Pendaftaran</h4>
+            <p className="text-sm text-slate-400 leading-relaxed mb-6">
+              Informasi lengkap mengenai penerimaan peserta didik baru dapat dilihat pada portal resmi SPMB Mu&apos;allimin.
             </p>
-            <div className="flex items-center gap-1 text-xs text-slate-400 font-medium">
-              Made with <CheckCircle2 className="w-3 h-3 text-emerald-500 mx-1" /> in Yogyakarta
-            </div>
+            <a href="https://spmb.muallimin.sch.id" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
+                Portal SPMB Online
+              </Button>
+            </a>
+          </div>
+        </div>
+        
+        <div className="container max-w-7xl mx-auto px-6 md:px-12 xl:px-16 mt-16 pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+          <p>© {new Date().getFullYear()} {profile?.school_name || "Madrasah Mu'allimin Muhammadiyah"}. All rights reserved.</p>
+          <div className="flex gap-4">
+            <span className="hover:text-slate-300 transition-colors">Developer: Tim IT Mu&apos;allimin</span>
           </div>
         </div>
       </footer>

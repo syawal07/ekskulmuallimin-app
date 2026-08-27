@@ -123,20 +123,20 @@ public function store(Request $request)
 
         $request->validate([
             'date' => 'required|date',
+            'waktu_sesi' => 'required|string',
             'excul_id' => 'required|exists:exculs,id',
             'proofImage' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120'
         ]);
 
         $activeYear = AcademicYear::where('is_active', true)->first();
-
         if (!$activeYear) {
             return response()->json(['success' => false, 'message' => 'Tahun Pelajaran belum diatur'], 400);
         }
 
         $date = Carbon::parse($request->date)->setTime(12, 0, 0);
+        $waktuSesi = $request->waktu_sesi;
         $userId = $request->user()->id;
         $exculId = $request->excul_id;
-
         $proofImageUrl = null;
 
         if ($request->hasFile('proofImage')) {
@@ -151,22 +151,20 @@ public function store(Request $request)
         }
 
         DB::beginTransaction();
+
         try {
             $allInputs = $request->all();
             
-            // Ambil data lama sekaligus
             $existingRecordsList = Attendance::where('excul_id', $exculId)
                 ->whereBetween('date', [$date->copy()->startOfDay(), $date->copy()->endOfDay()])
+                ->where('waktu_sesi', $waktuSesi)
                 ->get();
                 
             $existingRecords = $existingRecordsList->keyBy('student_id');
 
-            // --- LOGIKA BARU: DISTRIBUSI KEPEMILIKAN ---
-            // Kumpulkan ID pelatih yang sudah ada di database, lalu tambahkan ID pelatih yang sedang klik simpan
             $recorders = $existingRecordsList->pluck('recorder_id')->push($userId)->unique()->values()->toArray();
             $recorderCount = count($recorders);
             $studentIndex = 0;
-
             $insertData = [];
             $now = Carbon::now();
             
@@ -174,8 +172,6 @@ public function store(Request $request)
                 if (str_starts_with($key, 'status-')) {
                     $studentId = str_replace('status-', '', $key);
                     $notes = $request->input("notes-{$studentId}", '');
-
-                    // Tentukan pelatih mana yang akan dikunci pada baris siswa ini (bergantian / round-robin)
                     $assignedRecorderId = $recorders[$studentIndex % $recorderCount];
                     $studentIndex++;
 
@@ -183,7 +179,6 @@ public function store(Request $request)
                         $existing = $existingRecords->get($studentId);
                         $finalProofUrl = $proofImageUrl ?: $existing->proof_image_url;
                         
-                        // Pembaruan dilakukan jika status berubah ATAU jika kepemilikan perlu didistribusikan ulang
                         if ($existing->status !== $status || $existing->notes !== $notes || $existing->proof_image_url !== $finalProofUrl || $existing->recorder_id !== $assignedRecorderId) {
                             Attendance::where('id', $existing->id)->update([
                                 'status' => $status,
@@ -196,10 +191,11 @@ public function store(Request $request)
                         $insertData[] = [
                             'id' => (string) \Illuminate\Support\Str::uuid(),
                             'date' => $date,
+                            'waktu_sesi' => $waktuSesi,
                             'status' => $status,
                             'notes' => $notes,
                             'student_id' => $studentId,
-                            'recorder_id' => $assignedRecorderId, // Menggunakan ID yang sudah didistribusikan
+                            'recorder_id' => $assignedRecorderId,
                             'excul_id' => $exculId,
                             'academic_year_id' => $activeYear->id,
                             'proof_image_url' => $proofImageUrl,
@@ -219,7 +215,7 @@ public function store(Request $request)
             
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Gagal menyimpan presensi: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Gagal menyimpan presensi'], 500);
         }
     }
 
@@ -305,13 +301,15 @@ public function store(Request $request)
             ->get();
 
         $historyData = [];
+
         $groupedAttendances = $attendances->groupBy(function($item) {
-            return $item->date->format('Y-m-d') . '|' . $item->excul_id;
+            return $item->date->format('Y-m-d') . '|' . $item->excul_id . '|' . $item->waktu_sesi;
         });
 
         foreach ($groupedAttendances as $key => $group) {
             $date = $group->first()->date->format('Y-m-d');
             $exculId = $group->first()->excul_id;
+            $waktuSesi = $group->first()->waktu_sesi;
             $exculName = $group->first()->excul ? $group->first()->excul->name : 'Ekskul';
             
             $hadir = $group->where('status', 'HADIR')->count();
@@ -325,6 +323,7 @@ public function store(Request $request)
                 'date' => $date,
                 'exculId' => $exculId,
                 'exculName' => $exculName,
+                'waktuSesi' => $waktuSesi,
                 'hasProof' => $hasProof,
                 'stats' => [
                     'HADIR' => $hadir,

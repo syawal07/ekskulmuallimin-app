@@ -140,7 +140,7 @@ class AdminAttendanceController extends Controller
         ], 200);
     }
 
-    public function getSessions(Request $request)
+   public function getSessions(Request $request)
     {
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
@@ -152,12 +152,13 @@ class AdminAttendanceController extends Controller
             ->whereBetween('attendances.date', [$startDate, $endDate])
             ->select(
                 DB::raw('DATE(attendances.date) as session_date'),
+                'attendances.waktu_sesi',
                 'exculs.id as excul_id',
                 'exculs.name as excul_name',
                 DB::raw('MAX(recorders.name) as mentor_name'),
                 DB::raw('MAX(attendances.proof_image_url) as proofImageUrl')
             )
-            ->groupBy('session_date', 'exculs.id', 'exculs.name');
+            ->groupBy('session_date', 'attendances.waktu_sesi', 'exculs.id', 'exculs.name');
 
         if ($exculId && $exculId !== 'all') {
             $query->where('attendances.excul_id', $exculId);
@@ -169,10 +170,12 @@ class AdminAttendanceController extends Controller
         foreach ($paginatedSessions as $sessionGroup) {
             $dateStr = $sessionGroup->session_date;
             $currentExculId = $sessionGroup->excul_id;
-            $key = $dateStr . '_' . $currentExculId;
+            $waktuSesi = $sessionGroup->waktu_sesi;
+            $key = $dateStr . '_' . $currentExculId . '_' . $waktuSesi;
 
             $studentAttendances = Attendance::with('student')
                 ->whereDate('date', $dateStr)
+                ->where('waktu_sesi', $waktuSesi)
                 ->where('excul_id', $currentExculId)
                 ->get();
 
@@ -196,6 +199,7 @@ class AdminAttendanceController extends Controller
             $sessionsData[] = [
                 'id' => $key,
                 'date' => $dateStr,
+                'waktu_sesi' => $waktuSesi,
                 'excul_name' => $sessionGroup->excul_name,
                 'mentor_name' => $sessionGroup->mentor_name ?: 'Mentor',
                 'proofImageUrl' => $sessionGroup->proofImageUrl,
@@ -214,6 +218,7 @@ class AdminAttendanceController extends Controller
             ]
         ], 200);
     }
+
     public function getMentorRecap(Request $request)
     {
         $request->validate([
@@ -232,7 +237,8 @@ class AdminAttendanceController extends Controller
                 'users.id as id_mentor',
                 'users.name as nama_pelatih',
                 'exculs.name as nama_ekskul',
-                DB::raw('DATE(attendances.date) as tanggal_mengajar')
+                DB::raw('DATE(attendances.date) as tanggal_mengajar'),
+                'attendances.waktu_sesi'
             )
             ->distinct()
             ->orderBy('tanggal_mengajar', 'asc')
@@ -242,12 +248,17 @@ class AdminAttendanceController extends Controller
             return $item->id_mentor . '_' . $item->nama_ekskul;
         })->map(function ($items) {
             $first = $items->first();
+            
+            $formattedDates = $items->map(function ($item) {
+                return $item->tanggal_mengajar . ' (' . $item->waktu_sesi . ')';
+            })->toArray();
+
             return [
                 'id_mentor' => $first->id_mentor,
                 'nama_pelatih' => $first->nama_pelatih,
                 'nama_ekskul' => $first->nama_ekskul,
                 'total_hadir_mengajar' => $items->count(),
-                'tanggal_mengajar' => $items->pluck('tanggal_mengajar')->toArray(),
+                'tanggal_mengajar' => $formattedDates,
             ];
         })->values();
 

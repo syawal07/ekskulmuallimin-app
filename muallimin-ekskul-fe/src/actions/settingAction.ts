@@ -9,7 +9,7 @@ export async function updateCompanyProfile(formData: FormData) {
 
   if (!token) return { error: "Sesi habis, silakan login ulang." }
 
-  const filesToCheck = ["logo", "heroImage", "loginImage", "guidebook"];
+  const filesToCheck = ["logo", "heroImage", "loginImage", "guidePdf"];
   filesToCheck.forEach(field => {
       const file = formData.get(field) as File | null;
       if (!file || file.size === 0) {

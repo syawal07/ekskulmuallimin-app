@@ -25,13 +25,13 @@ const formatDateLocal = (date: Date) => {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-};
+}
 
 const getCurrentCutoff = () => {
   const today = new Date();
   const currentDay = today.getDate();
   let start, end;
-  
+
   if (currentDay <= 19) {
     start = new Date(today.getFullYear(), today.getMonth() - 1, 20);
     end = new Date(today.getFullYear(), today.getMonth(), 19);
@@ -39,32 +39,41 @@ const getCurrentCutoff = () => {
     start = new Date(today.getFullYear(), today.getMonth(), 20);
     end = new Date(today.getFullYear(), today.getMonth() + 1, 19);
   }
-  
+
   return { 
     startDate: formatDateLocal(start), 
     endDate: formatDateLocal(end) 
   };
-};
+}
 
 const getImageUrl = (path?: string | null) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
   
   let baseUrl = process.env.NEXT_PUBLIC_STORAGE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BACKEND_URL || '';
-  
   baseUrl = baseUrl.replace(/\/api$/, '');
   baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  
   return `${baseUrl}${cleanPath}`;
 }
 
-interface Excul { id: string; name: string; }
-interface StudentDetail { name: string; class: string; status: string; notes: string | null; }
+interface Excul { 
+  id: string; 
+  name: string; 
+}
+
+interface StudentDetail { 
+  name: string; 
+  class: string; 
+  status: string; 
+  notes: string | null; 
+}
+
 interface SessionData {
   id: string;
   date: string;
+  waktu_sesi?: string;
   excul_name: string;
   mentor_name: string;
   proofImageUrl: string | null;
@@ -83,6 +92,7 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
+  
   const [selectedSession, setSelectedSession] = useState<SessionData | null>(null)
 
   const setCutoffThisMonth = () => {
@@ -98,6 +108,7 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
     }
     setLoading(true)
     setHasSearched(true)
+
     const res = await fetchAttendanceSessions(selectedExcul, startDate, endDate, page)
     if (res?.error) {
       toast.error(res.error)
@@ -137,9 +148,10 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
     const worksheet = XLSX.utils.json_to_sheet(formattedData)
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, "Detail Kehadiran")
-
+    
     const safeExculName = selectedSession.excul_name.replace(/[^a-zA-Z0-9]/g, '_')
-    const fileName = `Presensi_${safeExculName}_${selectedSession.date}.xlsx`
+    const sesiName = selectedSession.waktu_sesi ? `_${selectedSession.waktu_sesi.replace(/\s+/g, '')}` : ''
+    const fileName = `Presensi_${safeExculName}_${selectedSession.date}${sesiName}.xlsx`
     
     XLSX.writeFile(workbook, fileName)
     toast.success("File Excel berhasil diunduh!")
@@ -159,7 +171,6 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
                   <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="pl-9" />
                 </div>
               </div>
-
               <div className="space-y-2 w-full md:w-auto">
                 <label className="text-sm font-medium text-slate-700">Tanggal Akhir</label>
                 <div className="relative">
@@ -186,7 +197,7 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
             
             <div>
               <Button variant="link" size="sm" onClick={setCutoffThisMonth} className="text-amber-600 hover:text-amber-700 p-0 h-auto font-bold tracking-tight">
-                ✨ Set ke Periode Bulan Ini (Tgl 20 - 19)
+                  Set ke Periode Bulan Ini (Tgl 20 - 19)
               </Button>
             </div>
           </div>
@@ -213,14 +224,15 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
                 {sessionList.map((session) => (
                   <Card key={session.id} className="hover:border-blue-300 transition-colors cursor-pointer flex flex-col h-full bg-white shadow-sm" onClick={() => setSelectedSession(session)}>
                     <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-bold text-slate-900 leading-tight">{session.excul_name}</h3>
-                          <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1">
-                            <Users className="w-3 h-3 text-blue-500"/> {session.mentor_name}
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-slate-900 leading-tight truncate" title={session.excul_name}>{session.excul_name}</h3>
+                          <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1 truncate">
+                            <Users className="w-3 h-3 text-blue-500 shrink-0"/> {session.mentor_name}
+                            {session.waktu_sesi && <span className="text-slate-400 font-normal ml-1">• {session.waktu_sesi}</span>}
                           </p>
                         </div>
-                        <Badge variant="outline" className="bg-white whitespace-nowrap font-semibold shadow-sm">
+                        <Badge variant="outline" className="bg-white whitespace-nowrap font-semibold shadow-sm shrink-0">
                           {new Date(session.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                         </Badge>
                       </div>
@@ -289,7 +301,11 @@ export default function AdminAttendanceSessionsClient({ exculs }: { exculs: Excu
               <div>
                 <h2 className="text-xl font-black text-slate-900 tracking-tight">{selectedSession.excul_name}</h2>
                 <div className="flex items-center gap-4 text-sm text-slate-500 mt-1 font-medium">
-                  <span className="flex items-center gap-1.5"><CalendarDays className="w-4 h-4 text-blue-500"/> {new Date(selectedSession.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  <span className="flex items-center gap-1.5">
+                    <CalendarDays className="w-4 h-4 text-blue-500"/> 
+                    {new Date(selectedSession.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {selectedSession.waktu_sesi ? ` (${selectedSession.waktu_sesi})` : ''}
+                  </span>
                   <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-amber-500"/> {selectedSession.mentor_name}</span>
                 </div>
               </div>

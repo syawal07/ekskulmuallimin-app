@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from "react"
-import { useRouter } from "next/navigation" // 1. Import useRouter
 import { updateCompanyProfile } from "@/actions/settingAction"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Save, School, Globe, ImageIcon, Loader2, Lock, FileText } from "lucide-react"
 import { toast } from "sonner"
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 
+const MAX_FILE_SIZE = 5 * 1024 * 1024
 
 export interface CompanyProfile {
   school_name?: string;
@@ -25,10 +24,10 @@ export interface CompanyProfile {
   email?: string;
   phone?: string;
   website?: string;
-  guidebook_url?: string;
   login_image_url?: string;
   login_quote?: string;
   login_quote_author?: string;
+  guide_pdf_url?: string;
 }
 
 function SaveButton({ loading }: { loading: boolean }) {
@@ -45,7 +44,6 @@ function SaveButton({ loading }: { loading: boolean }) {
 export default function SchoolProfileForm({ initialData = {} }: { initialData?: CompanyProfile | null }) {
   const data = initialData || {}
   const [loading, setLoading] = useState(false)
-  const router = useRouter() // 2. Inisialisasi router
 
   const getImageUrl = (path?: string | null) => {
     if (!path) return '';
@@ -71,9 +69,25 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
     }
   }
 
+  const handlePdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.type !== "application/pdf") {
+        toast.error("Format file harus PDF.")
+        e.target.value = ""
+        return
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Ukuran dokumen terlalu besar! Maksimal 10MB.")
+        e.target.value = "" 
+      }
+    }
+  }
+
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
+
     try {
       const formData = new FormData(event.currentTarget)
       const res = await updateCompanyProfile(formData)
@@ -82,7 +96,6 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
         toast.error(res.error)
       } else {
         toast.success("Perubahan berhasil disimpan!")
-        router.refresh() // 3. Panggil refresh agar data baru (termasuk PDF) langsung masuk ke UI
       }
     } catch (err) {
       toast.error("Gagal terhubung ke server. Pastikan ukuran file tidak terlalu besar.")
@@ -93,13 +106,13 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
 
   return (
     <Tabs defaultValue="branding" className="w-full space-y-6">
-      <div className="flex items-center justify-between">
-         <TabsList className="grid w-full max-w-3xl grid-cols-5 h-auto p-1 bg-slate-100">
+      <div className="flex items-center justify-between overflow-x-auto pb-2">
+         <TabsList className="grid w-full min-w-[600px] max-w-4xl grid-cols-5 h-auto p-1 bg-slate-100">
             <TabsTrigger value="branding" className="py-2">Identitas</TabsTrigger>
             <TabsTrigger value="landing" className="py-2">Landing Page</TabsTrigger>
             <TabsTrigger value="login" className="py-2">Halaman Login</TabsTrigger>
-            <TabsTrigger value="document" className="py-2">Dokumen</TabsTrigger>
             <TabsTrigger value="contact" className="py-2">Kontak</TabsTrigger>
+            <TabsTrigger value="document" className="py-2">Dokumen</TabsTrigger>
          </TabsList>
       </div>
 
@@ -115,7 +128,6 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                 <Label>Nama Sekolah</Label>
                 <Input name="school_name" defaultValue={data.school_name || ""} required />
               </div>
-
               <div className="space-y-2">
                 <Label>Logo Sekolah</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center bg-slate-50 hover:bg-slate-100 transition">
@@ -126,13 +138,12 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                     type="file" 
                     name="logo" 
                     accept="image/*" 
-                    className="text-xs text-slate-500 mx-auto" 
+                    className="text-xs text-slate-500 mx-auto"
                     onChange={handleFileChange} 
                   />
                   <p className="text-[10px] text-slate-400 mt-1">Maksimal 5MB (PNG/JPG)</p>
                 </div>
               </div>
-
               <SaveButton loading={loading} />
             </CardContent>
           </Card>
@@ -157,7 +168,6 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                   <Input name="hero_subtitle" defaultValue={data.hero_subtitle || ""} />
                 </div>
               </div>
-
               <div className="space-y-2">
                 <Label>Deskripsi Singkat</Label>
                 <textarea name="hero_description" defaultValue={data.hero_description || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
@@ -215,56 +225,13 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                   <p className="text-[10px] text-slate-400 mt-1">Maksimal 5MB (Disarankan gambar Portrait)</p>
                 </div>
               </div>
-
               <div className="space-y-2">
                 <Label>Kutipan Motivasi</Label>
                 <textarea name="login_quote" defaultValue={data.login_quote || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
-
               <div className="space-y-2">
                 <Label>Tokoh / Penulis</Label>
                 <Input name="login_quote_author" defaultValue={data.login_quote_author || ""} />
-              </div>
-
-              <SaveButton loading={loading} />
-            </CardContent>
-          </Card>
-        </form>
-      </TabsContent>
-
-      <TabsContent value="document">
-        <form onSubmit={handleSave}>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-primary" /> Dokumen Publik</CardTitle>
-              <CardDescription>Upload dokumen panduan yang dapat diunduh oleh masyarakat di halaman depan.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label>Buku Pedoman Ekstrakurikuler (PDF)</Label>
-                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center bg-slate-50 flex flex-col items-center justify-center">
-                  
-                  {/* Boks biru akan muncul jika data.guidebook_url sudah terisi setelah router.refresh() */}
-                  {data.guidebook_url && (
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3 w-full max-w-sm">
-                        <FileText className="w-6 h-6 text-blue-600 shrink-0" />
-                        <div className="text-left">
-                            <p className="text-sm font-bold text-blue-900">Dokumen Saat Ini Tersedia</p>
-                            <a href={getImageUrl(data.guidebook_url)} target="_blank" className="text-xs text-blue-600 hover:underline">Lihat Dokumen</a>
-                        </div>
-                    </div>
-                  )}
-
-                  <input 
-                    type="file" 
-                    name="guidebook" 
-                    accept="application/pdf" 
-                    className="text-sm text-slate-500 mx-auto"
-                    onChange={handleFileChange}
-                  />
-                  <p className="text-xs text-slate-400 mt-2">Maksimal 5MB. Hanya menerima format .PDF</p>
-                  <p className="text-xs text-amber-600 mt-1 font-medium">Kosongkan jika tidak ingin mengubah dokumen yang sudah ada.</p>
-                </div>
               </div>
 
               <SaveButton loading={loading} />
@@ -291,15 +258,47 @@ export default function SchoolProfileForm({ initialData = {} }: { initialData?: 
                   <Input name="email" defaultValue={data.email || ""} type="email" />
                 </div>
               </div>
-
               <div className="space-y-2">
                 <Label>Website URL</Label>
                 <Input name="website" defaultValue={data.website || ""} />
               </div>
-
               <div className="space-y-2">
                 <Label>Alamat Lengkap</Label>
                 <textarea name="address" defaultValue={data.address || ""} className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+
+              <SaveButton loading={loading} />
+            </CardContent>
+          </Card>
+        </form>
+      </TabsContent>
+
+      <TabsContent value="document">
+        <form onSubmit={handleSave}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-primary" /> Panduan & Dokumen</CardTitle>
+              <CardDescription>Upload panduan sistem atau dokumen penting (Format PDF).</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>File Panduan (PDF)</Label>
+                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center bg-slate-50 hover:bg-slate-100 transition">
+                  {data.guide_pdf_url && (
+                    <div className="mb-4 flex items-center justify-center gap-2 text-sm font-medium text-emerald-600 bg-emerald-50 w-fit mx-auto px-4 py-2 rounded-lg border border-emerald-200">
+                      <FileText className="w-5 h-5" />
+                      Dokumen saat ini telah terunggah
+                    </div>
+                  )}
+                  <input 
+                    type="file" 
+                    name="guidePdf" 
+                    accept="application/pdf" 
+                    className="text-xs text-slate-500 mx-auto w-full max-w-xs block"
+                    onChange={handlePdfChange} 
+                  />
+                  <p className="text-[11px] text-slate-500 mt-3">Format wajib: .PDF | Maksimal 10MB</p>
+                </div>
               </div>
 
               <SaveButton loading={loading} />

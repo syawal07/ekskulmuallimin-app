@@ -1,4 +1,5 @@
 "use client";
+
 import { useRouter } from "next/navigation"
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   submitAttendance,
   deleteAttendanceSession,
@@ -66,6 +68,7 @@ type AttendanceRecord = {
   status: "HADIR" | "SAKIT" | "IZIN" | "ALPHA";
   notes?: string | null;
   proofImageUrl?: string | null;
+  waktuSesi?: string;
 };
 
 const getImageUrl = (path?: string | null) => {
@@ -101,13 +104,16 @@ export default function AttendanceForm({
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [waktuSesi, setWaktuSesi] = useState<string>("Sesi 1");
 
   const [localData, setLocalData] = useState<
     Record<string, { status: string; notes: string }>
   >({});
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAddingStudent, setIsAddingStudent] = useState(false);
   const [openCombobox, setOpenCombobox] = useState(false);
@@ -135,6 +141,7 @@ export default function AttendanceForm({
   );
 
   const existingProof = initialData.find((d) => d.proofImageUrl)?.proofImageUrl;
+
   const defaultDate = initialDate
     ? typeof initialDate === "string"
       ? initialDate.substring(0, 10)
@@ -150,10 +157,16 @@ export default function AttendanceForm({
         setLocalData(JSON.parse(savedDraft));
         toast.info("Draf presensi sebelumnya berhasil dipulihkan.");
       } catch (e) {
-        console.error("Gagal memuat draf", e);
       }
     }
   }, [draftKey]);
+
+  useEffect(() => {
+    const existingSession = initialData.find((d) => d.waktuSesi)?.waktuSesi;
+    if (existingSession) {
+        setWaktuSesi(existingSession);
+    }
+  }, [initialData]);
 
   const getInitialStatus = (studentId: string) => {
     const record = initialData.find((r) => r.studentId === studentId);
@@ -207,7 +220,7 @@ export default function AttendanceForm({
   const handleBulkStatus = (status: "HADIR" | "ALPHA") => {
     setLocalData((prev) => {
       const updatedData = { ...prev };
-      students.forEach((student) => {
+      filteredStudents.forEach((student) => {
         updatedData[student.id] = {
           status: status,
           notes: prev[student.id]?.notes ?? getInitialNotes(student.id),
@@ -217,7 +230,7 @@ export default function AttendanceForm({
       return updatedData;
     });
     toast.success(
-      `Berhasil mengatur semua santri menjadi ${status === "HADIR" ? "Hadir" : "Alpha"}`,
+      `Berhasil mengatur santri yang difilter menjadi ${status === "HADIR" ? "Hadir" : "Alpha"}`,
     );
   };
 
@@ -250,8 +263,8 @@ export default function AttendanceForm({
 
     try {
       const formData = new FormData(e.currentTarget);
-
       const file = formData.get("proofImage") as File;
+
       if (file && file.size > 5 * 1024 * 1024) {
         toast.error("Ukuran foto terlalu besar! Maksimal 5MB.");
         return;
@@ -268,7 +281,6 @@ export default function AttendanceForm({
       }
     } catch (error) {
       toast.error("Terjadi gangguan jaringan. Data Anda aman sebagai draf.");
-      console.error(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -288,7 +300,6 @@ const handleDelete = async () => {
       }
     } catch (error) {
       toast.error("Terjadi gangguan jaringan saat menghapus data.")
-      console.error(error)
     } finally {
       setIsDeleting(false)
     }
@@ -300,6 +311,7 @@ const handleDelete = async () => {
       toast.error("Silakan cari dan pilih nama santri dari daftar.");
       return;
     }
+
     setIsAddingStudent(true);
     const formData = new FormData(e.currentTarget);
     formData.append("student_id", selectedNewStudent);
@@ -320,7 +332,7 @@ const handleDelete = async () => {
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
         <input type="hidden" name="exculId" value={exculId} />
-
+        
         <div className="hidden">
           {students.map((s) => {
             if (paginatedStudents.find((p) => p.id === s.id)) return null;
@@ -362,23 +374,40 @@ const handleDelete = async () => {
                     {exculName}
                   </p>
                 </div>
-
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
-                    Tanggal Kegiatan
-                  </Label>
-                  <Input
-                    type="date"
-                    name="date"
-                    defaultValue={defaultDate}
-                    readOnly={!!initialDate}
-                    className={cn(
-                      "h-11 font-medium text-slate-700 w-full",
-                      initialDate
-                        ? "bg-slate-50 border-transparent cursor-not-allowed"
-                        : "bg-white border-slate-200 hover:border-primary/50 transition-colors cursor-pointer",
-                    )}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
+                        Tanggal Kegiatan
+                    </Label>
+                    <Input
+                        type="date"
+                        name="date"
+                        defaultValue={defaultDate}
+                        readOnly={!!initialDate}
+                        className={cn(
+                        "h-11 font-medium text-slate-700 w-full",
+                        initialDate
+                            ? "bg-slate-50 border-transparent cursor-not-allowed"
+                            : "bg-white border-slate-200 hover:border-primary/50 transition-colors cursor-pointer",
+                        )}
+                    />
+                    </div>
+                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
+                            Pilih Sesi
+                        </Label>
+                        <Select name="waktu_sesi" value={waktuSesi} onValueChange={setWaktuSesi}>
+                            <SelectTrigger className="h-11 font-medium text-slate-700 w-full bg-white border-slate-200 hover:border-primary/50 transition-colors">
+                            <SelectValue placeholder="Pilih sesi..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Sesi 1">Sesi 1</SelectItem>
+                                <SelectItem value="Sesi 2">Sesi 2</SelectItem>
+                                <SelectItem value="Sesi 3">Sesi 3</SelectItem>
+                                <SelectItem value="Sesi Gabungan">Sesi Gabungan</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
               </div>
 
@@ -398,7 +427,6 @@ const handleDelete = async () => {
                     onChange={handleImageChange}
                     ref={fileInputRef}
                   />
-
                   {selectedImagePreview ? (
                     <div className="flex flex-col items-center justify-center gap-3 w-full h-full relative z-20 pointer-events-none">
                       <div className="relative w-4/5 h-28 rounded-lg overflow-hidden shadow-md border-2 border-emerald-500">
@@ -475,7 +503,6 @@ const handleDelete = async () => {
                 <CardTitle className="text-slate-800 whitespace-nowrap">
                   Daftar Siswa ({filteredStudents.length})
                 </CardTitle>
-
                 <div className="flex flex-col sm:flex-row items-center w-full sm:w-auto gap-3">
                   <Button
                     type="button"
@@ -496,7 +523,6 @@ const handleDelete = async () => {
                       className="pl-9 h-9 text-sm bg-slate-50 border-slate-200 focus-visible:ring-primary"
                     />
                   </div>
-
                   <select
                     value={itemsPerPage}
                     onChange={(e) => {
@@ -535,13 +561,13 @@ const handleDelete = async () => {
                     Alpha Semua
                   </Button>
                 </div>
-
                 <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full whitespace-nowrap self-end sm:self-auto">
                   Halaman {currentPage}/{totalPages}
                 </span>
               </div>
             </div>
           </CardHeader>
+
           <CardContent className="pt-6">
             <div className="space-y-4">
               {paginatedStudents.length === 0 ? (
@@ -566,7 +592,7 @@ const handleDelete = async () => {
                         </p>
                         <p className="text-xs text-slate-500 mt-0.5 font-medium">
                           Kelas {student.class}{" "}
-                          {student.nis ? `   NIS: ${student.nis}` : ""}
+                          {student.nis ? ` | NIS: ${student.nis}` : ""}
                         </p>
                       </div>
                     </div>
@@ -635,7 +661,6 @@ const handleDelete = async () => {
                           </div>
                         </RadioGroup>
                       </div>
-
                       <div className="w-full md:w-1/3 xl:w-1/4">
                         <Input
                           name={`notes-${student.id}`}
