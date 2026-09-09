@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Trash2, Loader2, History, CalendarDays } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Trash2, Loader2, History, CalendarDays, Edit } from "lucide-react"
 import { toast } from "sonner"
 import { deletePerkaderanSession } from "@/actions/perkaderanAction"
 
@@ -17,9 +18,11 @@ interface HistoryStats {
 }
 
 interface HistoryItem {
+  id: string;
   date: string;
   perkaderanId: number;
   perkaderanName: string;
+  kelas: string;
   stats: HistoryStats;
 }
 
@@ -41,18 +44,24 @@ export default function PerkaderanHistoryClient({
     router.push(`/mentor/perkaderan/riwayat?month=${newMonth}&year=${newYear}`)
   }
 
-  const handleDelete = async (date: string, perkaderanId: number) => {
-    if (!confirm("Hapus seluruh presensi pada sesi ini? Data tidak dapat dikembalikan.")) return
+  const handleDelete = async (date: string, perkaderanId: number, kelas: string, id: string) => {
+    if (!confirm(`Hapus presensi ${kelas} pada sesi ini? Data tidak dapat dikembalikan.`)) return
     
-    setIsDeleting(`${date}-${perkaderanId}`)
-    const result = await deletePerkaderanSession(date, perkaderanId.toString())
+    setIsDeleting(id)
+    const result = await deletePerkaderanSession(date, perkaderanId.toString(), kelas)
     
     if (result?.error) {
       toast.error(result.error)
     } else {
       toast.success("Sesi berhasil dihapus.")
+      router.refresh()
     }
     setIsDeleting(null)
+  }
+
+  const handleEdit = (date: string, perkaderanId: number, kelas: string) => {
+    // Arahkan pelatih ke halaman presensi dengan filter yang sudah terpasang
+    router.push(`/mentor/perkaderan/presensi?perkaderan_id=${perkaderanId}&kelas=${kelas}&date=${date}`)
   }
 
   const months = [
@@ -65,7 +74,7 @@ export default function PerkaderanHistoryClient({
   const currentYearOptions = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString())
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-6">
       <Card className="border-slate-200 shadow-sm">
         <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
           <CardTitle className="text-lg flex items-center gap-2 text-slate-800">
@@ -107,6 +116,7 @@ export default function PerkaderanHistoryClient({
               <tr>
                 <th className="px-6 py-4">Tanggal</th>
                 <th className="px-6 py-4">Jenjang Perkaderan</th>
+                <th className="px-6 py-4">Kelas Target</th>
                 <th className="px-6 py-4 text-center">Hadir</th>
                 <th className="px-6 py-4 text-center">Izin</th>
                 <th className="px-6 py-4 text-center">Sakit</th>
@@ -116,32 +126,47 @@ export default function PerkaderanHistoryClient({
             </thead>
             <tbody className="divide-y divide-slate-100">
               {initialData.length > 0 ? (
-                initialData.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
+                initialData.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-50">
                     <td className="px-6 py-4 font-bold text-slate-800 whitespace-nowrap">
                       {new Date(item.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-700">{item.perkaderanName}</td>
+                    <td className="px-6 py-4">
+                      <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 font-bold">
+                        Kelas {item.kelas}
+                      </Badge>
+                    </td>
                     <td className="px-6 py-4 text-center font-bold text-green-600">{item.stats.HADIR}</td>
                     <td className="px-6 py-4 text-center font-bold text-yellow-600">{item.stats.IZIN}</td>
                     <td className="px-6 py-4 text-center font-bold text-blue-600">{item.stats.SAKIT}</td>
                     <td className="px-6 py-4 text-center font-bold text-red-600">{item.stats.ALPHA}</td>
                     <td className="px-6 py-4 text-right">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleDelete(item.date, item.perkaderanId)}
-                        disabled={isDeleting === `${item.date}-${item.perkaderanId}`}
-                        className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                      >
-                        {isDeleting === `${item.date}-${item.perkaderanId}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEdit(item.date, item.perkaderanId, item.kelas)}
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 font-semibold"
+                        >
+                          <Edit className="w-4 h-4 mr-1" /> Edit
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDelete(item.date, item.perkaderanId, item.kelas, item.id)}
+                          disabled={isDeleting === item.id}
+                          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                        >
+                          {isDeleting === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                     Belum ada riwayat presensi di bulan ini.
                   </td>
                 </tr>

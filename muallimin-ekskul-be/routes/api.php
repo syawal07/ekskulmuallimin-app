@@ -89,6 +89,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/perkaderans/{id}', [PerkaderanController::class, 'show']);
     Route::put('/admin/perkaderans/{id}', [PerkaderanController::class, 'update']);
     Route::delete('/admin/perkaderans/{id}', [PerkaderanController::class, 'destroy']);
+    Route::get('/admin/perkaderan/unregistered-students', [AdminPerkaderanMonitorController::class, 'getUnregisteredStudents']);
+    Route::post('/admin/perkaderan/enroll', [AdminPerkaderanMonitorController::class, 'enrollStudent']);
 
     // Admin - Monitoring Presensi & Nilai
     Route::get('/admin/attendances', [AdminAttendanceController::class, 'index']);
@@ -105,6 +107,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/mentor/perkaderan/attendance', [PerkaderanMentorController::class, 'destroySession']);
     Route::get('/mentor/perkaderan/assessments', [PerkaderanMentorController::class, 'getPenilaian']);
     Route::post('/mentor/perkaderan/assessments', [PerkaderanMentorController::class, 'storePenilaian']);
+    Route::get('/mentor/perkaderan/unregistered-students', [PerkaderanMentorController::class, 'getUnregisteredStudents']);
+    Route::post('/mentor/perkaderan/enroll', [PerkaderanMentorController::class, 'enrollStudent']);
 
     Route::get('/admin/assessments', [AdminAssessmentController::class, 'index']);
     Route::get('/admin/assessments/export', [AdminAssessmentController::class, 'export']);

@@ -180,7 +180,7 @@ export default function AdminLayoutClient({
           <MenuItem 
             href="/admin/perkaderan/monitoring" 
             icon={ClipboardCheck} 
-            label="Rekap Perkaderan" 
+            label="Monitoring Perkaderan" 
             isActive={isPathActive("/admin/perkaderan/monitoring")}
             onClick={() => setIsMobileMenuOpen(false)}
           />
